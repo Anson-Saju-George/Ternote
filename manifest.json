@@ -1,6 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Personal AI Chat Exporter",
+  "name": "Ternote",
+  "homepage_url": "https://github.com/Anson-Saju-George/Ternote",
   "version": "0.1.0",
   "description": "Load and export conversations locally, with images, attachments and beautifully formatted PDF downloads.",
   "minimum_chrome_version": "127",
@@ -20,7 +21,7 @@
   },
   "action": {
     "default_popup": "src/ui/index.html",
-    "default_title": "Export conversation"
+    "default_title": "Ternote — Export conversation"
   },
   "options_ui": {
     "page": "src/ui/index.html?settings=1",

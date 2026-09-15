@@ -60,7 +60,7 @@ test('PDF has paired turn numbers, source logo, honest metadata and message boxe
   const c=prepareConversation({...demoConversation(),model:'test-model',effort:'high'});
   const def=pdfDefinition(c), all=nodes(def.content);
   const labels=all.filter(n=>n.style==='speaker').map(n=>n.text?.map(t=>t.text).join(''));
-  assert.deepEqual(labels,['YOU  1','1','YOU  2','2']);
+  assert.deepEqual(labels,['USER  1','1','USER  2','2']);
   assert(all.some(n=>n.svg?.includes('<path')));
   assert(all.some(n=>n.text?.some?.(t=>t.text?.includes('test-model'))));
   assert(all.some(n=>n.table?.headerRows===1 && n.layout?.fillColor));
@@ -74,5 +74,5 @@ test('attachments interrupt the flow on fresh pages and resume in the same turn'
   const boxes=def.content.filter(n=>n.table);
   assert.equal(boxes.length,2);
   assert.equal(boxes[1].pageBreak,'before');
-  assert(def.content.some(n=>n.style==='speaker' && n.pageBreak==='before'));
+  assert(def.content.some(n=>n.style==='speaker' && n.pageBreak==='before' && n.text.map(t=>t.text).join('')==='USER 1  /  ATTACHMENT'));
 });

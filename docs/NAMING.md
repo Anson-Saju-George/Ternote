@@ -1,6 +1,10 @@
-# Naming decision — pending
+# Naming decision — Ternote
 
-The user considered ChaXpo, AI Chatpress, ChaXpot and ConvoLeaf. The repository URL supplied for the source-code checkpoint is https://github.com/Anson-Saju-George/ConvoLeaf.git. Do not treat its name as trademark clearance or rename the extension automatically.
+On 2026-09-15 the owner selected Ternote and authorized https://github.com/Anson-Saju-George/Ternote.git as the repository. Use Ternote for the extension/UI name and PDF creator metadata, and ternote for the package and development ZIP names.
+
+The local project folder remains Personal AI Chat Exporter to preserve existing unpacked-browser paths. Internal storage and capture identifiers remain unchanged; a branding change does not require a settings migration.
+
+Earlier candidates included ChaXpo, AI Chatpress, ChaXpot and ConvoLeaf. The previously supplied ConvoLeaf remote is superseded by Ternote.
 
 An exact product/category collision was found for ConvoLeaf:
 https://chromewebstore.google.com/detail/convoleaf-chat-exporter/mfljaoomchapinlcgbelnmifoaplmdpf
@@ -8,4 +12,4 @@ https://chromewebstore.google.com/detail/convoleaf-chat-exporter/mfljaoomchapinl
 ChatPress.ai is also already used by an AI chatbot product:
 https://docs.chatpress.ai/introduction
 
-These are preliminary public-web checks, not comprehensive trademark, domain, package, or store-name clearance. Keep the development working name until the user settles the final brand. A future repository rename must be explicitly authorized.
+The preliminary Ternote search found unrelated names/handles but no obvious exact-name software product. This is not comprehensive trademark, domain, package, or store-name clearance. Public licensing and the store publisher remain separate owner decisions.

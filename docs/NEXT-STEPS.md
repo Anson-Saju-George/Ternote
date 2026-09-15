@@ -36,7 +36,7 @@ Do not invent model/effort values. The current live ChatGPT DOM exposes data-mes
 4. Screenshot/share-card exports with large-chat limits made explicit.
 5. Batch export: user-selected conversations only, progress/cancel/resume, no account-wide scraping.
 6. Additional platforms only after individual adapter tests; never advertise unimplemented platform counts.
-7. Release: license/branding decisions, public GitHub preparation, CI/security/performance checks, store assets/privacy disclosures and submission with user authorization.
+7. Release: license decision, final Ternote brand assets, public GitHub preparation, CI/security/performance checks, store assets/privacy disclosures and submission with user authorization.
 
 ## Clean-room reference
 

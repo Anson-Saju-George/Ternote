@@ -1,6 +1,6 @@
-# Personal AI Chat Exporter
+# Ternote
 
-Independent, local-first browser extension. Development build 0.1.0. Working name; public license and publisher are still to be chosen. GitHub destination: [development repository](https://github.com/Anson-Saju-George/ConvoLeaf). No Chrome Web Store release has been submitted.
+Independent, local-first AI chat exporter for ChatGPT, Claude and Gemini. Development build 0.1.0. GitHub: [Anson-Saju-George/Ternote](https://github.com/Anson-Saju-George/Ternote). Public license and Chrome Web Store publisher are still to be chosen; no store release has been submitted.
 
 The initial popup design is approved. The sharper-green PDF/identity pass is ready for the next Edge visual check; automated checks do not replace user approval. No demo or sample UI is included. See [next steps](docs/NEXT-STEPS.md) for the ordered feature backlog and restart handoff.
 

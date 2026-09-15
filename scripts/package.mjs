@@ -17,7 +17,7 @@ for(const {name,data}of await entries(dist)){
   central.push(c,n);offset+=header.length+n.length+compressed.length;
 }
 const directory=Buffer.concat(central),end=Buffer.alloc(22);end.writeUInt32LE(0x06054b50);end.writeUInt16LE(central.length/2,8);end.writeUInt16LE(central.length/2,10);end.writeUInt32LE(directory.length,12);end.writeUInt32LE(offset,16);
-const zip=Buffer.concat([...local,directory,end]),name='personal-ai-chat-exporter-'+manifest.version+'.zip';
+const zip=Buffer.concat([...local,directory,end]),name='ternote-'+manifest.version+'.zip';
 await mkdir(release,{recursive:true});await writeFile(join(release,name),zip);
 await writeFile(join(release,name+'.sha256'),createHash('sha256').update(zip).digest('hex')+'  '+name+'\n');
 console.log('Development ZIP: '+join(release,name)+' ('+zip.length+' bytes)');

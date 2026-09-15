@@ -70,7 +70,7 @@ export function pdfDefinition(c, theme = 'light') {
     const isUser = message.role === 'user', isAssistant = message.role === 'assistant';
     function flush() {
       if (!segment.length) return;
-      const label = isUser ? 'YOU' : isAssistant ? (logo ? '' : platformName(c.platform)) : message.role.toUpperCase();
+      const label = isUser ? 'USER' : isAssistant ? (logo ? '' : platformName(c.platform)) : message.role.toUpperCase();
       const header = { columns: [
         ...(isAssistant && logo ? [{svg:logo,width:17,height:17,margin:[0,-3,0,0]}] : []),
         text((label ? label + '  ' : '') + message.turn + (continuation ? '  ·  CONTINUED' : ''), {style:'speaker',width:'*'})
@@ -94,7 +94,7 @@ export function pdfDefinition(c, theme = 'light') {
       const nodes = [block(b)].flat(Infinity);
       if (nodes.length) {
         nodes[0].pageBreak = 'before';
-        content.push(text((isUser?'YOU':platformName(c.platform))+' '+message.turn+'  /  ATTACHMENT',{style:'speaker',pageBreak:'before',margin:[0,0,0,12]}));
+        content.push(text((isUser?'USER':platformName(c.platform))+' '+message.turn+'  /  ATTACHMENT',{style:'speaker',pageBreak:'before',margin:[0,0,0,12]}));
         delete nodes[0].pageBreak;
         content.push(...nodes);
         resumeOnNewPage = true;
@@ -106,7 +106,7 @@ export function pdfDefinition(c, theme = 'light') {
   if(last){const margin=Array.isArray(last.margin)?last.margin:[0,0,0,0];last.margin=[margin[0],margin[1],margin[2],0];}
   return {
     pageSize: 'A4', pageMargins: [52, 50, 52, 52], compress: true,
-    info: { title: c.title || 'Conversation', creator: 'Personal AI Chat Exporter' },
+    info: { title: c.title || 'Conversation', creator: 'Ternote' },
     background: () => ({ canvas: [{ type: 'rect', x: 0, y: 0, w: 595.28, h: 841.89, color: colors.paper }] }),
     defaultStyle: { font: 'Roboto', fontSize: 10.5, lineHeight: 1.25, color: colors.ink },
     styles: {

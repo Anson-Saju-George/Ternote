@@ -64,7 +64,7 @@ try{
   await send('Page.enable',{},sessionId);await send('Runtime.enable',{},sessionId);
   for(let i=0;i<60;i++){if(await evaluate(sessionId,"document.documentElement?.dataset.ready === 'true'"))break;await sleep(100);}
   const details=await evaluate(sessionId,"({name:chrome.runtime.getManifest().name,version:chrome.runtime.getManifest().version,ready:document.documentElement.dataset.ready==='true',demoRemoved:!document.getElementById('demo')&&!document.querySelector('.conversation')})");
-  if(details.name!=='Personal AI Chat Exporter'||!details.ready)throw new Error('The extension did not initialize.');
+  if(details.name!=='Ternote'||!details.ready)throw new Error('The extension did not initialize.');
   if(process.argv.includes('--chat-preview')){
     const chatId=await evaluate(sessionId,"(async()=>{const tabs=await chrome.tabs.query({url:'https://chatgpt.com/*'});const t=tabs.sort((a,b)=>(b.lastAccessed||0)-(a.lastAccessed||0))[0];return t?.id})()");
     if(chatId){

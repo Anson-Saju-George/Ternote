@@ -23,7 +23,7 @@
     style.textContent = ':host{all:initial;position:fixed;right:18px;bottom:90px;z-index:2147483000}button{font:650 13px system-ui;color:#fff;background:#204a37;border:1px solid #5e8e80;border-radius:5px;padding:9px 15px;box-shadow:0 3px 12px #0002;cursor:pointer}button:focus-visible{outline:3px solid #e3af46;outline-offset:3px}';
     const button = document.createElement('button');
     button.textContent = 'Export';
-    button.title = 'Open Personal AI Chat Exporter';
+    button.title = 'Open Ternote';
     button.addEventListener('click', async () => {
       try { const result = await chrome.runtime.sendMessage({ type: 'open-export' }); if (!result?.ok) dispose(); }
       catch { dispose(); }
