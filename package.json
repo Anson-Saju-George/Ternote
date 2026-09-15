@@ -1,0 +1,28 @@
+{
+  "name": "personal-ai-chat-exporter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local conversation exports for ChatGPT, Claude and Gemini",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "build": "node scripts/build.mjs",
+    "check": "node scripts/check.mjs",
+    "test:browser": "node scripts/browser-test.mjs",
+    "package": "node scripts/package.mjs",
+    "open:brave": "node scripts/open-browser.mjs",
+    "open:edge": "node scripts/open-browser.mjs --edge"
+  },
+  "dependencies": {
+    "mammoth": "1.12.3",
+    "pdfjs-dist": "6.3.289",
+    "pdfmake": "0.3.11"
+  },
+  "devDependencies": {
+    "jszip": "3.10.1"
+  }
+}

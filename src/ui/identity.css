@@ -1,0 +1,15 @@
+/* Sharper green: same compact layout, stronger hierarchy, restrained geometry. */
+h1{font-weight:750}h1 span{color:#477044}
+.brand span,.intro,.hint{color:#5b705e}
+.brandmark{border-radius:6px}
+.secondary,.primary,select,input[type=text],textarea,.selection{border-radius:5px}
+.primary{font-weight:700;background:#204a37;border-color:#204a37}
+.card,iframe,.notice{border-radius:6px}
+.status{font-weight:600;color:#536c55}
+footer{font-weight:600;color:#5d725c}
+.version,.section-label{color:#647461}
+summary{font-weight:600;color:#536b52}
+.eyebrow .dot{background:#386d40;animation:private-pulse 3s ease-in-out infinite}
+@keyframes private-pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@media(min-width:700px){.shell{border-radius:10px;box-shadow:0 12px 36px #233f350a}}
+@media(prefers-reduced-motion:reduce){.eyebrow .dot{animation:none}}

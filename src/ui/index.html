@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Personal AI Chat Exporter</title><link rel="stylesheet" href="style.css"><link rel="stylesheet" href="compact.css"><link rel="stylesheet" href="identity.css"></head>
+<body>
+<div id="shell" class="shell">
+<header><div class="brandmark" aria-hidden="true">↗</div><div class="brand">Personal Exporter<span>YOUR CONVERSATIONS, YOURS TO KEEP</span></div><button id="settingsToggle" class="icon" aria-label="Platform settings">⚙</button></header>
+<main>
+<div class="eyebrow"><span class="dot"></span> PRIVATE BY DESIGN <span class="version">EARLY BUILD · 0.1</span></div>
+<h1>Keep the <span>good ideas.</span></h1>
+<p class="intro">Your conversations. Your format. Always local.</p>
+<section id="settings" hidden class="card"><h2>Connected platforms</h2><p class="hint">Enable only the sites you want to export.</p><div id="platforms"></div><label class="check"><input id="showButton" type="checkbox" checked> Show the small Export button on enabled sites</label></section>
+<div class="field-grid"><label>Format<select id="format"><option value="markdown">Markdown .md</option><option value="pdf">PDF document .pdf</option><option value="html">Web document .html</option><option value="text">Plain text .txt</option><option value="json">Structured data .json</option><option value="csv">Spreadsheet .csv</option></select></label><label>Appearance<select id="theme"><option value="light">Paper · light</option><option value="dark">Midnight · dark</option></select></label></div>
+<label class="field">Messages<select id="range"><option value="all">Entire conversation</option><option value="user">My messages only</option><option value="assistant">Assistant messages only</option><option value="selected">Choose messages…</option></select></label>
+<div id="selection" hidden class="selection"></div>
+<details><summary>Fine-tune your export <span>+</span></summary><div class="advanced"><label class="field">Filename<input id="filename" type="text" maxlength="120" placeholder="Conversation title"></label><label class="check"><input id="metadata" type="checkbox" checked> Include title, source and export time</label><label class="field">Remove exact text <span class="hint">One phrase per line. Changes the exported copy only.</span><textarea id="redact" rows="3" placeholder="Text to replace with [redacted]"></textarea></label></div></details>
+<p id="notice" class="notice" hidden></p>
+<div id="progress" class="progress" hidden><label id="progressLabel" for="progressBar">Loading conversation</label><progress id="progressBar" aria-labelledby="progressLabel"></progress></div>
+<div class="actions"><button id="preview" class="secondary">Preview</button><button id="export" class="primary">Export conversation <span>↓</span></button><button id="cancel" hidden class="text-button">Cancel</button></div>
+<p id="status" role="status" aria-live="polite" class="status">No account. No upload. Everything stays local.</p>
+<section id="previewPanel" hidden><div class="section-label"><span>EXPORT PREVIEW</span><button id="closePreview" class="text-button">Close</button></div><iframe id="previewFrame" sandbox="allow-same-origin" referrerpolicy="no-referrer" title="Safe export preview"></iframe><div id="pdfPreview" hidden><nav class="pdf-pager" aria-label="PDF pages"><button id="previousPage" class="secondary" aria-label="Previous PDF page">←</button><span id="pageLabel" aria-live="polite"></span><button id="nextPage" class="secondary" aria-label="Next PDF page">→</button></nav><canvas id="pdfCanvas" role="img" aria-label="PDF preview"></canvas></div></section>
+</main><footer><span><span class="dot"></span> Everything stays local</span><span>Made for your next idea.</span></footer>
+</div><script type="module" src="app.js"></script></body></html>

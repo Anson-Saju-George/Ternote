@@ -1,0 +1,12 @@
+node_modules/
+dist/
+release/
+test-output/
+coverage/
+.env*
+!.env.example
+*.pem
+*.key
+*.crx
+.DS_Store
+Thumbs.db
