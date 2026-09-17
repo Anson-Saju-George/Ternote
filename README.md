@@ -2,7 +2,7 @@
 
 Independent, local-first AI chat exporter for ChatGPT, Claude and Gemini. Development build 0.1.0. GitHub: [Anson-Saju-George/Ternote](https://github.com/Anson-Saju-George/Ternote). Public license and Chrome Web Store publisher are still to be chosen; no store release has been submitted.
 
-The initial popup design is approved. The sharper-green PDF/identity pass is ready for the next Edge visual check; automated checks do not replace user approval. No demo or sample UI is included. See [next steps](docs/NEXT-STEPS.md) for the ordered feature backlog and restart handoff.
+The user approved the UI, PDF identity and compact attachment-layout checkpoint on 2026-09-17. Native file-card/PPTX extraction is still pending; approval is not a claim of production readiness. No demo or sample UI is included. See [next steps](docs/NEXT-STEPS.md) for the ordered feature backlog and restart handoff.
 
 ## Run
 
@@ -17,6 +17,8 @@ Requires Node.js 24 or newer.
 
 Load the generated dist folder as an unpacked extension. Enable only the platforms you use. On a chat, click the small Export button for a dedicated export tab, or use the toolbar popup. Keep the export view open while it works; closing it cancels the job.
 
+For manual testing, prefer normal Edge: open edge://extensions, enable Developer mode, choose Load unpacked and select dist. The open:edge command launches a separate debug profile with separate login data; it may encounter platform verification. Complete any verification manually; the extension does not bypass it.
+
 ## Current features
 
 - Optional, separate permissions for ChatGPT, Claude and Gemini.
@@ -25,7 +27,7 @@ Load the generated dist folder as an unpacked extension. Enable only the platfor
 - Stable-ID collection retains virtualized messages and preserves identical messages with different IDs. Restore the page scroll position and recognized expanded controls after capture.
 - Markdown, HTML, TXT, JSON, CSV, and directly downloaded PDF files. No print dialog.
 - Original PDF layout: A4 pages, tinted message boxes, paired user/assistant turn numbering, ChatGPT source logo, observed model/effort metadata, page numbers, light/dark palettes, repeated table/code headers, and paginated code.
-- Accessible attachments start fresh pages at their conversation position; subsequent conversation resumes on a fresh page.
+- Accessible attachments use bordered cards at their conversation position. Images and messages share remaining page space; two landscape images can fit on one page. PDF attachment pages retain a larger readable size and paginate naturally.
 - PDF preview renders the actual download, one page at a time. The completed PDF is reused when exporting unchanged settings.
 - Accessible images, PDF pages, DOCX text/tables/images, and exposed artifact content in PDF and HTML.
 - Message selection is built only when requested. Captured messages transfer in bounded batches; binary attachments transfer in chunks.
@@ -53,4 +55,4 @@ npm run test:browser uses an isolated Chromium profile with synthetic conversati
 
 npm run package creates a compressed development ZIP with a SHA-256 sidecar. CI installs the locked dependencies and verifies the source before building. Libraries, fonts, PDF workers, character maps and required decoding assets are bundled locally; no executable code is downloaded at runtime. The build collects third-party notices. See [dependencies](docs/DEPENDENCIES.md), [privacy](PRIVACY.md), and [visual checklist](docs/VISUAL-TEST-CHECKLIST.md).
 
-No proprietary extension code, branding, templates or assets are included. Private reference snapshots remain in the separate research workspace.
+No proprietary extension code, branding, templates or assets are included in the product. Private reference snapshots live under docs/research/snapshots, which is Git-ignored and excluded from builds.

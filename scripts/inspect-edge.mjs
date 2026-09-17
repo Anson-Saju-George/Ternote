@@ -21,6 +21,19 @@ try{
     if(process.argv.includes('--cancel-export')){
       await call('Runtime.evaluate',{expression:"document.getElementById('cancel')?.click()"},sessionId);continue;
     }
+    if(process.argv.includes('--file-preview')){
+      const result=await call('Runtime.evaluate',{returnByValue:true,expression:'('+(()=>{
+        const shape=value=>{try{const u=new URL(value,location.href);return {scheme:u.protocol,origin:u.origin,extension:u.pathname.match(/\.(pdf|pptx|docx|png|jpg|webp)$/i)?.[1]};}catch{return null;}};
+        return {
+          frames:[...document.querySelectorAll('iframe,object,embed')].map(e=>{let inner;try{const d=e.contentDocument;inner=d?{ready:d.readyState,images:d.images.length,canvases:d.querySelectorAll('canvas').length,links:[...d.querySelectorAll('a[href]')].map(a=>shape(a.href)),textLength:d.body?.textContent.length}:null;}catch{}return {tag:e.tagName,url:shape(e.src||e.data),pathShape:(e.src||'').replace(/[a-f0-9]{8}-[a-f0-9-]{27,}/gi,'[id]').split('?')[0],queryKeys:[...new URL(e.src||location.href).searchParams.keys()],titleLength:(e.title||'').length,inner};}),
+          controls:[...document.querySelectorAll('button,[role="button"]')].filter(e=>/download|slide|presentation|full screen|close/i.test(e.getAttribute('aria-label')||'')).map(e=>({tag:e.tagName,label:(e.getAttribute('aria-label')||'').replace(/[^ ]+\.(pptx|docx|pdf)/gi,'[file]'),visible:!!e.getClientRects().length})).slice(0,30),
+          previewNodes:[...document.querySelectorAll('[data-testid]')].filter(e=>/file|slide|preview|artifact/i.test(e.dataset.testid)).map(e=>({tag:e.tagName,testid:e.dataset.testid})).slice(0,30),
+          links:[...document.querySelectorAll('a[href]')].filter(e=>e.download||/download|\.(pptx|pdf|docx)\b/i.test(e.textContent)).map(e=>({url:shape(e.href),download:!!e.download})).slice(0,30),
+          images:[...document.querySelectorAll('img')].filter(e=>!e.closest('[data-message-author-role]')).map(e=>({url:shape(e.currentSrc||e.src),width:e.naturalWidth,height:e.naturalHeight})).slice(0,20)
+        };
+      }).toString()+')()'},sessionId);
+      console.log(JSON.stringify(result.result?.value,null,2));continue;
+    }
     if(process.argv.includes('--metadata')){
       const result=await call('Runtime.evaluate',{returnByValue:true,expression:'('+(()=>{
         return {
@@ -57,13 +70,13 @@ try{
     console.log(JSON.stringify(process.argv.includes('--dialog-only')?result.result?.value?.dialogs:result.result?.value||{error:result.exceptionDetails?.text},null,2));
     if(process.argv.includes('--probe-file')||process.argv.includes('--probe-download')){
       const probe=await call('Runtime.evaluate',{returnByValue:true,awaitPromise:true,expression:'('+ (async()=>{
-        const button=document.querySelector('[role="dialog"] button[aria-label="Download"]')||[...document.querySelectorAll('[data-message-author-role] button.behavior-btn')].find(b=>/\.(pptx|docx|pdf)\b/i.test(b.textContent));
+        const button=document.querySelector('button[aria-label="Download file"],[role="dialog"] button[aria-label="Download"]')||[...document.querySelectorAll('[data-message-author-role] button.behavior-btn')].find(b=>/\.(pptx|docx|pdf)\b/i.test(b.textContent));
         if(!button)return {found:false};
-        const original=HTMLAnchorElement.prototype.click,open=window.open,seen=[];
-        const remember=(url,download)=>{try{const u=new URL(url,location.href);seen.push({origin:u.origin,scheme:u.protocol,download:!!download});}catch{}};
+        const original=HTMLAnchorElement.prototype.click,open=window.open,seen=[],checks=[];
+        const remember=(url,download)=>{try{const u=new URL(url,location.href);const info={origin:u.origin,scheme:u.protocol,download:!!download};seen.push(info);if(u.origin===location.origin&&u.protocol==='https:')checks.push(fetch(u.href,{credentials:'same-origin',redirect:'error',referrerPolicy:'no-referrer',signal:AbortSignal.timeout(5000)}).then(async r=>{info.status=r.status;info.mime=r.headers.get('content-type');const reader=r.body.getReader();try{const first=await reader.read();info.zipSignature=first.value?.[0]===80&&first.value?.[1]===75;}finally{await reader.cancel();}}).catch(()=>{info.readBlocked=true;}));}catch{}};
         HTMLAnchorElement.prototype.click=function(){remember(this.href,this.download);};
         window.open=function(url){remember(url,false);return null;};
-        try{button.click();await new Promise(r=>setTimeout(r,3000));return {found:true,resourceEvents:seen,dialogs:[...document.querySelectorAll('[role="dialog"]')].map(d=>({links:d.querySelectorAll('a[href]').length,buttons:[...d.querySelectorAll('button')].map(b=>/download/i.test(b.textContent+' '+b.getAttribute('aria-label'))?'download':/close/i.test(b.getAttribute('aria-label')||'')?'close':'other')}))};}
+        try{button.click();await new Promise(r=>setTimeout(r,3000));await Promise.all(checks);return {found:true,resourceEvents:seen,dialogs:[...document.querySelectorAll('[role="dialog"]')].map(d=>({links:d.querySelectorAll('a[href]').length,buttons:[...d.querySelectorAll('button')].map(b=>/download/i.test(b.textContent+' '+b.getAttribute('aria-label'))?'download':/close/i.test(b.getAttribute('aria-label')||'')?'close':'other')}))};}
         finally{HTMLAnchorElement.prototype.click=original;window.open=open;}
       }).toString()+')()'},sessionId);
       console.log('File activation diagnostic: '+JSON.stringify(probe.result?.value||{error:probe.exceptionDetails?.text}));

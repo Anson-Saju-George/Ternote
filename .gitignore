@@ -2,6 +2,10 @@ node_modules/
 dist/
 release/
 test-output/
+# Imported private research archive; retained locally, not published with Ternote.
+docs/research/
+docs/README.md
+docs/PRODUCT-PLAN.md
 coverage/
 .env*
 !.env.example

@@ -68,11 +68,21 @@ test('PDF has paired turn numbers, source logo, honest metadata and message boxe
   assert.deepEqual(selected.messages.map(m=>m.turn),[2,2]);
 });
 
-test('attachments interrupt the flow on fresh pages and resume in the same turn',()=>{
+test('attachments have borders and remain in flow between messages',()=>{
   const c={platform:'chatgpt',messages:[{role:'user',blocks:[{type:'paragraph',text:'before'},{type:'asset',assetId:'a',name:'Image'},{type:'paragraph',text:'after'}]}],assets:[{id:'a',status:'ready',kind:'image',data:image}]};
   const def=pdfDefinition(c);
   const boxes=def.content.filter(n=>n.table);
-  assert.equal(boxes.length,2);
-  assert.equal(boxes[1].pageBreak,'before');
-  assert(def.content.some(n=>n.style==='speaker' && n.pageBreak==='before' && n.text.map(t=>t.text).join('')==='USER 1  /  ATTACHMENT'));
+  assert.equal(boxes.length,3);
+  assert(!nodes(def.content).some(n=>n.pageBreak==='before'));
+  assert.equal(boxes[1].unbreakable,true);
+  assert.equal(boxes[1].layout.vLineWidth(),.7);
+  assert(nodes(boxes[1]).some(n=>n.style==='speaker' && n.text.map(t=>t.text).join('')==='USER 1  /  ATTACHMENT'));
+  assert.deepEqual(nodes(boxes[1]).find(n=>n.image).fit,[437,250]);
+});
+test('document attachment pages keep readable size without forced breaks',()=>{
+  const c={messages:[{role:'assistant',blocks:[{type:'asset',assetId:'pdf'}]}],assets:[{id:'pdf',kind:'pdf',status:'ready',name:'Document',pages:[{data:image,name:'Page 1'},{data:image,name:'Page 2'}]}]};
+  const def=pdfDefinition(c);
+  assert.equal(nodes(def.content).filter(n=>n.image).length,2);
+  assert(nodes(def.content).filter(n=>n.image).every(n=>n.fit[1]===600));
+  assert(!nodes(def.content).some(n=>n.pageBreak));
 });
