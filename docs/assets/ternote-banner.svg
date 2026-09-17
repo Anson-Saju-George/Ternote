@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="400" viewBox="0 0 1280 400" role="img" aria-labelledby="title desc">
+  <title id="title">Ternote — Your conversations, yours to keep.</title>
+  <desc id="desc">A forest-green banner with cream lettering and original geometric conversation and document illustrations.</desc>
+  <defs>
+    <linearGradient id="paper" x2="1" y2="1"><stop stop-color="#f4f7e9"/><stop offset="1" stop-color="#dbe7cb"/></linearGradient>
+  </defs>
+  <rect width="1280" height="400" rx="20" fill="#183d30"/>
+  <path d="M780 0H1280V400H990Z" fill="#214c3b"/>
+  <path d="M1080 0H1280V400H1190Z" fill="#2a5942"/>
+  <rect x="64" y="58" width="52" height="52" rx="8" fill="#c8e69f"/>
+  <path d="M79 95L100 74M83 74H100V91" fill="none" stroke="#183d30" stroke-width="5" stroke-linecap="square"/>
+  <text x="64" y="198" fill="#f4f7e9" font-family="Segoe UI,Arial,sans-serif" font-size="82" font-weight="750" letter-spacing="-3">Ternote</text>
+  <text x="67" y="253" fill="#d3e4c2" font-family="Segoe UI,Arial,sans-serif" font-size="29">Your conversations, yours to keep.</text>
+  <path d="M67 292H670" stroke="#54745a"/>
+  <text x="67" y="331" fill="#b9d29f" font-family="Segoe UI,Arial,sans-serif" font-size="14" font-weight="600" letter-spacing="3">AI CHAT EXPORTS · LOCAL-FIRST · MADE TO KEEP</text>
+  <g transform="translate(845 61)">
+    <rect x="56" y="22" width="260" height="266" rx="9" fill="#102f24" opacity=".5"/>
+    <rect x="43" y="10" width="260" height="266" rx="9" fill="url(#paper)"/>
+    <rect x="65" y="38" width="88" height="7" rx="2" fill="#356b50"/>
+    <rect x="65" y="61" width="173" height="5" rx="2" fill="#a4ba97"/>
+    <rect x="65" y="94" width="215" height="63" rx="4" fill="#c6d8b8" stroke="#9cb88b"/>
+    <path d="M80 113H252M80 128H222M80 142H172" stroke="#6b895f" stroke-width="4"/>
+    <rect x="65" y="171" width="215" height="79" rx="4" fill="#f8faef" stroke="#a6bc99"/>
+    <path d="M80 190H232M80 205H255M80 220H222M80 235H164" stroke="#9aaf8c" stroke-width="4"/>
+    <rect x="-16" y="203" width="126" height="63" rx="6" fill="#d5eead" stroke="#356b50" stroke-width="2"/>
+    <path d="M4 225H83M4 241H61" stroke="#356b50" stroke-width="5"/>
+  </g>
+</svg>

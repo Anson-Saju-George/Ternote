@@ -1,5 +1,7 @@
 # Ternote
 
+> Looking for the product overview? Read **[Ternote — Your conversations, yours to keep](Ternote.md)**. The **[17-phase roadmap](Test.md)** tracks planned work and acceptance criteria. This file retains the technical setup and implementation boundaries.
+
 Independent, local-first AI chat exporter for ChatGPT, Claude and Gemini. Development build 0.1.0. GitHub: [Anson-Saju-George/Ternote](https://github.com/Anson-Saju-George/Ternote). Public license and Chrome Web Store publisher are still to be chosen; no store release has been submitted.
 
 The user approved the UI, PDF identity and compact attachment-layout checkpoint on 2026-09-17. Native file-card/PPTX extraction is still pending; approval is not a claim of production readiness. No demo or sample UI is included. See [next steps](docs/NEXT-STEPS.md) for the ordered feature backlog and restart handoff.
