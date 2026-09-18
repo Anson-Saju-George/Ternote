@@ -4,7 +4,7 @@
 
 Independent, local-first AI chat exporter for ChatGPT, Claude and Gemini. Development build 0.1.0. GitHub: [Anson-Saju-George/Ternote](https://github.com/Anson-Saju-George/Ternote). Public license and Chrome Web Store publisher are still to be chosen; no store release has been submitted.
 
-The user approved the UI, PDF identity and compact attachment-layout checkpoint on 2026-09-17. Native file-card/PPTX extraction is still pending; approval is not a claim of production readiness. No demo or sample UI is included. See [next steps](docs/NEXT-STEPS.md) for the ordered feature backlog and restart handoff.
+The user approved the UI, PDF identity and compact attachment-layout checkpoint on 2026-09-17. The 2026-09-18 native-file retrieval candidate passes 29 unit tests and the isolated Edge suite; live visual approval remains pending. Recognized ChatGPT PDF/DOCX/PPTX cards use visible viewer download controls. Retrieved PDF/DOCX bytes enter the existing conversion pipeline; PPTX originals can be saved unchanged, but slides are not rendered. No demo or sample UI is included. See [next steps](docs/NEXT-STEPS.md) for the ordered feature backlog and restart handoff.
 
 ## Run
 
@@ -41,7 +41,9 @@ The three platform adapters remain independently authored candidates. Passing sy
 
 The loader reaches both visible scroll boundaries and waits for them to settle. This is not proof that a platform exposed its whole server-side history. Delayed loading without an observable busy indicator, inaccessible branches, unresolved controls, or recycled elements without stable IDs can affect completeness. Warnings are retained in the export; it is never labelled server-verified complete.
 
-Only DOM-exposed resource URLs and already-rendered images are read. CORS-protected, expired, redirected, password-protected, missing, or card-only attachments may be unavailable. These get explicit notes, not silent omissions. The extension does not probe private endpoints, read tokens, bypass access controls, or request access to every website. Open a restricted attachment in the chat and retry; some need a future platform-specific adapter.
+Resources come from DOM-exposed URLs, already-rendered images, or a recognized ChatGPT file viewer's Download action. The native adapter temporarily observes window.open and programmatic anchor clicks during that action, accepts only same-origin HTTPS URLs, and restores those methods on completion, cancellation or timeout. It requires an unambiguous filename match. CORS-protected, expired, redirected, password-protected, missing, or unrecognized attachments may be unavailable. These get explicit notes, not silent omissions. The extension does not probe private endpoints, read tokens, bypass access controls, or request access to every website.
+
+PPTX originals remain in the export view's memory and are discarded on a new capture, disconnect or view closure. Saving originals is disabled while exact-text redaction is enabled because the files are unchanged. DOCX/PPTX containers receive bounded ZIP structure checks; these are not malware scanning or full Office validation. Native card behavior still requires live ChatGPT validation; unfamiliar or localized viewer controls may not match.
 
 Attached PDFs are included as rendered pages, not embedded original files; their text is not searchable in the combined PDF. Conversation and DOCX text remain searchable. DOCX is reflowed, not an exact reproduction of Word pagination, styles, or headers. HTML/SVG/code artifacts are rendered as inert source, never executed. Only exposed or safely expandable artifact panes are captured.
 

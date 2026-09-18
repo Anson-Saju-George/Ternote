@@ -2,6 +2,7 @@
 h1{font-weight:750}h1 span{color:#477044}
 .brand span,.intro,.hint{color:#5b705e}
 .brandmark{border-radius:6px}
+#originalFiles button{display:block;max-width:100%;overflow-wrap:anywhere;margin:8px 0}
 .secondary,.primary,select,input[type=text],textarea,.selection{border-radius:5px}
 .primary{font-weight:700;background:#204a37;border-color:#204a37}
 .card,iframe,.notice{border-radius:6px}

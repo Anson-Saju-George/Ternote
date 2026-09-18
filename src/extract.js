@@ -10,7 +10,7 @@ export async function captureConversation(config, options = {}) {
   const handle = {
     token, controller, assets, messages: [], lastAccess: Date.now(),
     cancel: () => controller.abort(),
-    dispose: () => { disposed = true; controller.abort(); assets.clear(); handle.messages = []; clearInterval(lease); globalThis.chrome?.storage?.onChanged.removeListener(onPermissions); if (globalThis.__personalExportCapture === handle) delete globalThis.__personalExportCapture; }
+    dispose: () => { disposed = true; controller.abort(); for (const a of assets.values()) if(a.marker && a.element?.getAttribute('data-ternote-file')===a.marker)a.element.removeAttribute('data-ternote-file'); assets.clear(); handle.messages = []; clearInterval(lease); globalThis.chrome?.storage?.onChanged.removeListener(onPermissions); if (globalThis.__personalExportCapture === handle) delete globalThis.__personalExportCapture; }
   };
   globalThis.__personalExportCapture = handle;
   // A closed/reloaded export view must not leave conversation data or an orphaned job on the page.
@@ -81,7 +81,7 @@ export async function captureConversation(config, options = {}) {
     if (el.tagName === 'A') {
       const label = el.getAttribute('download') || plain(el) || 'Attachment';
       const url = el.getAttribute('href') || '';
-      const ext = (label.match(/\.(pdf|docx|txt|md|csv|json|html|svg|js|py|css)\b/i) || url.split(/[?#]/)[0].match(/\.(pdf|docx|txt|md|csv|json|html|svg|js|py|css)$/i))?.[1]?.toLowerCase();
+      const ext = (label.match(/\.(pdf|docx|pptx|txt|md|csv|json|html|svg|js|py|css)\b/i) || url.split(/[?#]/)[0].match(/\.(pdf|docx|pptx|txt|md|csv|json|html|svg|js|py|css)$/i))?.[1]?.toLowerCase();
       if (ext || el.hasAttribute('download')) {
         return { type: 'asset', assetId: asset(el, ext || 'unknown', url, label), name: label };
       }
@@ -101,7 +101,12 @@ export async function captureConversation(config, options = {}) {
       else if (child.matches('button,[role="button"]')) {
         for (const img of child.querySelectorAll('img')) if (visible(img)) { flush(); const b = resourceBlock(img); if (b) output.push(b); }
         const name = (child.textContent || '').trim();
-        if (/\.(pdf|docx?|pptx?|xlsx?|odt|ods|odp|epub|zip|csv|txt|md)\b/i.test(name)) {
+        const fileName = name.replace(/\s+/g,' ').match(/^(.+?\.(pdf|docx|pptx))(?:$|\s+(?:Presentation|Document|PDF)(?:\s+file)?$)/i);
+        if (options.nativeFiles && config.id==='chatgpt' && fileName && fileName[1].length<=200 && !child.querySelector('img') && child.closest('[data-message-author-role]')) {
+          flush(); const id=asset(child,fileName[2].toLowerCase(),null,fileName[1]);
+          assets.get(id).native=true;
+          output.push({type:'asset',assetId:id,name:fileName[1]});
+        } else if (/\.(pdf|docx?|pptx?|xlsx?|odt|ods|odp|epub|zip|csv|txt|md)\b/i.test(name)) {
           flush(); output.push({type:'attachment-note',text:name.slice(0,200)+': file card detected, but this build cannot resolve its download yet.'});
           warnings.add('File cards were found without readable URLs. Their contents are not included in this export yet.');
         }
@@ -147,6 +152,22 @@ export async function captureConversation(config, options = {}) {
       progress('Reading images and attachments');
       try {
         if (rawBytes >= 256 * 1024 * 1024) throw new Error('Attachment memory budget reached (256 MB).');
+        if(a.native) {
+          progress('Opening the attachment viewer');
+          a.marker=token+':'+a.id;a.element.setAttribute('data-ternote-file',a.marker);
+          const result=await new Promise((resolve,reject)=>{
+            const aborted=()=>finish(new Error('Capture cancelled.'));
+            const timer=setTimeout(()=>finish(new Error('The attachment viewer timed out. Open the file in ChatGPT and retry.')),15000);
+            function finish(error,value){clearTimeout(timer);controller.signal.removeEventListener('abort',aborted);error?reject(error):resolve(value);}
+            controller.signal.addEventListener('abort',aborted,{once:true});
+            Promise.resolve().then(()=>globalThis.chrome.runtime.sendMessage({type:'native-file-request',token,marker:a.marker,name:a.name,url:originalUrl})).then(value=>finish(null,value),()=>finish(new Error('The export view could not read the native file viewer.')));
+          });
+          check();
+          if(!result?.url)throw new Error(result?.error||'The native file is unavailable.');
+          const url=new URL(result.url);
+          if(url.origin!==location.origin || url.protocol!=='https:' || url.username || url.password)throw new Error('The native download URL is not supported.');
+          a.url=url.href;
+        }
         // Snapshot already loaded, origin-clean images before a virtualized page removes them.
         if (a.kind === 'image' && a.element.complete && a.element.naturalWidth) {
           try {
@@ -182,7 +203,7 @@ export async function captureConversation(config, options = {}) {
         check(); a.blob = undefined;
         a.error = e.name === 'TypeError' ? 'The platform blocked access to this file (CORS, expired link, or login required).' : e.message;
         warnings.add(a.name + ': ' + a.error);
-      } finally { delete a.element; delete a.url; }
+      } finally { if(a.marker && a.element?.getAttribute('data-ternote-file')===a.marker)a.element.removeAttribute('data-ternote-file'); delete a.element; delete a.url; delete a.marker; }
     }
   }
   function expansionControls(el) {

@@ -1,5 +1,11 @@
 # Sequential visual checkpoints
 
+## Resume checkpoint — 2026-09-18
+
+Native retrieval candidate implemented and tested: recognized ChatGPT PDF/DOCX/PPTX buttons resolve through a filename-matched visible viewer Download action. PDF/DOCX use the existing rendering pipeline; PPTX originals can be saved unchanged from the export view. Slides are not yet included in exports. No new permissions or runtime dependencies were added. 29 unit tests, source/permission checks, build and the full isolated Edge suite passed, including exact-byte original downloads, cancellation and wrong-file rejection. Original saving is disabled under redaction; originals are memory-only and cleared with the capture/view lifecycle.
+
+Next: reload dist in normal Edge, refresh ChatGPT, reopen Ternote and visually test uploaded/generated cards. Do not treat synthetic fixtures as live approval. After that checkpoint is accepted, implement bounded PPTX slide-content extraction with explicit visual-fidelity limits. Earlier notes below describe the pre-resolver state and are historical, not the current implementation status.
+
 Updated 2026-09-17. User wants one working step at a time, opened in Edge for visual approval. Current priority is ChatGPT; Claude/Gemini adapters remain candidates until live validation.
 
 The owner accepted all implemented work through the compact attachment-layout checkpoint. After every completed phase: run proportionate checks, record scope and remaining limitations, commit the phase, and push main to the Ternote origin. Keep private research, user conversations, downloads and browser profiles out of Git. Use normal Edge with dist loaded unpacked for manual visual checks; the dedicated debug profile encountered human verification.

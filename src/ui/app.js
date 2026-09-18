@@ -3,12 +3,27 @@ import { captureConversation, cancelCapture, readCaptureBatch, readCaptureAsset,
 import { exportConversation, prepareConversation, filename, messageText } from '../exporters.js';
 import { renderAsset, openPdf } from '../assets.js';
 import { createPdf } from '../pdf.js';
+import { resolveNativeFile } from '../native-file.js';
+import { verifyOfficeFile } from '../office-file.js';
 const $ = id => document.getElementById(id);
 const api = globalThis.chrome?.runtime?.id ? chrome : null;
 const query = new URLSearchParams(location.search);
 let conversation, tab, platform, busy = false, previewUrl, operation, captureToken, heartbeat;
 let sourceUrl, revision = 0, pdfCache, pdfTask, previewPdf, pageNumber = 1, pageRender, previewGeneration = 0;
 let selectionInitialized = false;
+const originals = new Map();
+function showOriginals() {
+  $('originalFiles').replaceChildren(); $('originalFiles').hidden = !originals.size;
+  if(!originals.size)return;
+  const hint=document.createElement('p');hint.className='hint';hint.textContent='PPTX originals retrieved. Slides are not yet included in exports. Original files are unchanged; saving is disabled while text redaction is enabled.';
+  $('originalFiles').append(hint);
+  for(const {name,blob} of originals.values()) {
+    const button=document.createElement('button');button.className='secondary';button.textContent='Save original — '+name;
+    button.disabled=busy||!!$('redact').value.trim();
+    button.onclick=()=>{if(busy||$('redact').value.trim())return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=filename(name.replace(/\.pptx$/i,''),'pptx');a.click();setTimeout(()=>URL.revokeObjectURL(url),60000);};
+    $('originalFiles').append(button);
+  }
+}
 function status(text, error = false) { $('status').textContent = text; $('status').classList.toggle('error', error); }
 function progress({ stage, count, current, total }) {
   const suffix = total ? ' — ' + current + ' / ' + total : count !== undefined ? ' — ' + count + ' messages' : '';
@@ -24,6 +39,7 @@ function setBusy(value) {
   $('cancel').hidden = !value; $('progress').hidden = !value;
   $('selection').inert = value;
   $('shell').setAttribute('aria-busy', String(value));
+  showOriginals();
 }
 function currentOptions() {
   return { range: $('range').value, selected: [...$('selection').querySelectorAll('input:checked')].map(e => Number(e.value)), metadata: $('metadata').checked, redact: $('redact').value };
@@ -81,12 +97,12 @@ async function ensureConversation(signal) {
   if (!await api.permissions.contains({ origins: [nextPlatform.origin] })) { $('settings').hidden = false; throw new Error('Enable ' + nextPlatform.name + ' in settings, then try again.'); }
   tab = active; platform = nextPlatform;
   if (conversation && sourceUrl === tab.url) return;
-  conversation = undefined; invalidate();
+  conversation = undefined; originals.clear();showOriginals();invalidate();
   captureToken = crypto.randomUUID();
   progress({ stage: 'Loading the entire conversation', count: 0 });
   heartbeat = setInterval(() => { if (captureToken) void inject(touchCapture,[captureToken]).catch(() => {}); }, 5000);
   try {
-    const summary = await inject(captureConversation, [platform, { token: captureToken, stream: true }]);
+    const summary = await inject(captureConversation, [platform, { token: captureToken, stream: true, nativeFiles: true }]);
     signal.throwIfAborted();
     if (!summary) throw new Error('Capture returned no content. Reload the chat and retry.');
     const c = { ...summary, messages: [] }; delete c.token;
@@ -118,6 +134,14 @@ async function ensureConversation(signal) {
           if (part.done) break;
         }
         const buffer = await new Blob(parts).arrayBuffer(); parts.length = 0;
+        if(meta.kind==='docx'||meta.kind==='pptx')verifyOfficeFile(buffer,meta.kind);
+        if(meta.kind==='pptx') {
+          totalSize+=buffer.byteLength;
+          if(totalSize>256*1024*1024)throw new Error('Attachments exceed the safe memory budget (256 MB).');
+          originals.set(meta.id,{name:meta.name,blob:new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'})});
+          rendered.push({...meta,status:'retrieved',error:'PPTX container retrieved; slide rendering is not implemented. Save the original from Ternote.'});
+          continue;
+        }
         const result = await renderAsset(meta, buffer, { signal, onProgress: progress });
         totalSize += JSON.stringify(result).length;
         if (totalSize > 256 * 1024 * 1024) throw new Error('Rendered attachments exceed the safe memory budget (256 MB).');
@@ -128,7 +152,7 @@ async function ensureConversation(signal) {
     c.assets = rendered; conversation = c; sourceUrl = tab.url; revision++; pdfCache = undefined;
     selectionInitialized = false; $('selection').replaceChildren(); $('filename').value = c.title;
     showNotice(c);
-  } finally { await releaseCapture(); }
+  } finally { if(!conversation){originals.clear();showOriginals();} await releaseCapture(); }
 }
 function prepared() {
   if (!conversation) throw new Error('Load a conversation first.');
@@ -223,17 +247,22 @@ async function renderPlatforms() {
         await api.runtime.sendMessage({ type: 'reconcile' });
         if (!enabled) {
           for (const t of await api.tabs.query({ url: p.origin })) await api.scripting.executeScript({ target: { tabId: t.id }, files: ['src/button.js'] }).catch(() => {});
-        } else { conversation = undefined; invalidate(); $('notice').hidden = true; }
+        } else { conversation = undefined; originals.clear();showOriginals();invalidate(); $('notice').hidden = true; }
         await renderPlatforms(); status(enabled ? p.name + ' disconnected.' : p.name + ' enabled. Preview or export when ready.');
       } catch { status('Could not change platform access. Retry from the extension popup.', true); }
     };
     row.append(name,button); $('platforms').append(row);
   }
 }
-api?.runtime.onMessage.addListener((message, sender) => {
+api?.runtime.onMessage.addListener((message, sender, reply) => {
+  if (busy && sender.id===api.runtime.id && sender.tab?.id===tab?.id && sender.frameId===0 && message.type==='native-file-request' && message.token===captureToken && message.url===tab.url && platform?.id==='chatgpt' && typeof message.marker==='string' && message.marker.startsWith(captureToken+':asset-') && typeof message.name==='string' && message.name.length<=200) {
+    api.scripting.executeScript({target:{tabId:tab.id},world:'MAIN',func:resolveNativeFile,args:[message.marker,message.name,message.url]})
+      .then(result=>reply(result[0]?.result||{error:'No file viewer result.'}),()=>reply({error:'Unable to access the native file viewer.'}));
+    return true;
+  }
   if (busy && sender.id === api.runtime.id && sender.tab?.id === tab?.id && message.type === 'capture-progress' && message.token === captureToken) progress(message);
 });
-api?.permissions.onRemoved.addListener(() => { void cancel(); conversation = undefined; invalidate(); });
+api?.permissions.onRemoved.addListener(() => { void cancel(); conversation = undefined; originals.clear();showOriginals();invalidate(); });
 $('preview').onclick = () => run('preview'); $('export').onclick = () => run('download'); $('cancel').onclick = cancel;
 $('previousPage').onclick = () => showPdfPage(pageNumber - 1).catch(e => status(e.message,true));
 $('nextPage').onclick = () => showPdfPage(pageNumber + 1).catch(e => status(e.message,true));
@@ -250,8 +279,9 @@ $('range').onchange = async () => {
 $('closePreview').onclick = closePreview;
 for (const id of ['format','theme','metadata','showButton']) $(id).addEventListener('change', () => { invalidate(); save().catch(() => status('Could not save preferences.', true)); });
 $('redact').addEventListener('input', () => { invalidate(); if ($('redact').value.trim()) status('Exact-text redaction omits images and attached PDF pages; their pixels cannot be safely text-redacted.'); });
+$('redact').addEventListener('input',showOriginals);
 $('selection').addEventListener('change', invalidate);
-window.addEventListener('pagehide', () => { void cancel(); closePreview(); conversation = undefined; pdfCache = undefined; });
+window.addEventListener('pagehide', () => { void cancel(); closePreview(); conversation = undefined; originals.clear();pdfCache = undefined; });
 async function init() {
   if (api) {
     const state = await api.storage.local.get('preferences'), p = preferences(state.preferences);

@@ -12,7 +12,7 @@ The owner accepted all implemented work through compact PDF/image layout. This d
 | 2 | Extension foundation | Built; release hardening remains |
 | 3 | Core UI & exports | Current implementation approved |
 | 4 | PDF layout & images | Current implementation approved |
-| 5 | Native attachments & PPTX | **Next** |
+| 5 | Native attachments & PPTX | Retrieval candidate tested; live approval and slide rendering pending |
 | 6 | Capture reliability & caching | Basic loading built; hardening/cache pending |
 | 7 | General & export settings | Basic controls built; expansion pending |
 | 8 | Selection & quick-export workflow | Basic selection built; expansion pending |
@@ -51,6 +51,8 @@ The owner accepted all implemented work through compact PDF/image layout. This d
 **Accept when:** two landscape images and short surrounding text fit on one page; larger content paginates without clipping; light/dark output and long code retain content. **Current implementation approved.** Do not restore the superseded forced-page-break design.
 
 ## 5. Native attachments & PPTX
+
+2026-09-18 checkpoint: recognized native file-card retrieval, PDF/DOCX pipeline integration and unchanged PPTX original downloads are implemented. All 29 unit tests and the isolated Edge suite pass, including wrong-file rejection, cancellation cleanup, byte preservation and redaction restrictions. Live ChatGPT visual approval and PPTX slide rendering remain pending; this phase is not complete.
 
 **Build:** retrieve uploaded and generated files through visible ChatGPT file-viewer/download controls; integrate PDF/DOCX content and PPTX slide content at the correct conversation position.
 

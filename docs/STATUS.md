@@ -1,12 +1,14 @@
 # Development status
 
+Candidate checkpoint (2026-09-18): native ChatGPT file-card retrieval now uses matching visible viewer/download controls. PDF/DOCX resources enter the existing conversion pipeline; structurally verified PPTX containers offer Save original, preserving exact bytes. No PPTX slide rendering is claimed. All 29 unit tests, source/permission checks, build and the complete isolated Edge suite passed, including cancellation cleanup, wrong-file rejection, Save original byte verification, redaction restrictions and cache cleanup on conversation change. Build size: 13,199,275 bytes. Live normal-Edge visual approval is still pending. This is a Phase 5 sub-checkpoint, not completion of Phase 5.
+
 Latest checkpoint (2026-09-17): user accepted all implemented work through compact bordered attachment layout, including the Ternote UI, direct PDF download, image export and USER labels. Images and queries now share available page space instead of forcing fresh pages. Two landscape image cards with surrounding query text are verified on one rendered PDF page. All 25 unit/security tests passed; the complete isolated Edge suite passed on rerun. An earlier virtualized-message ordering failure remains a timing-sensitivity issue to investigate during capture hardening. See NEXT-STEPS.md for the ordered backlog.
 
 Visual testing now uses the user's normal Edge profile with dist loaded unpacked. The separate debug profile triggered ChatGPT human verification while normal Edge worked; the specific cause was not established. Do not bypass verification or assume developer mode caused it. User approval covers implemented behavior, not unfinished native-file/PPTX extraction or store-release readiness. Commit and push after each completed phase, as explicitly requested by the owner.
 
 Capture-loop follow-up: anonymous artifact panels now have distinct identities and nested panel wrappers are read once. The regression fixture reproduces the old loop and passes with the fix. The original ChatGPT tab was no longer open when the session resumed, so confirmation against that same live conversation remains pending. Edge is open for the user's next check.
 
-Important: native ChatGPT PPTX/DOCX/PDF buttons still need a download resolver; the current PDF reports unavailable file cards at their conversation position. Reusable cross-view caching, General/Export settings, saved library, sidebar and additional formats are NOT complete. Cache draft modules are excluded from dist.
+Important: the native resolver is a tested candidate, not live-platform certification. Unrecognized or inaccessible file cards still produce notes at their conversation position. PPTX slides, reusable cross-view caching, General/Export settings, saved library, sidebar and additional formats are NOT complete. Cache draft modules are excluded from dist.
 
 Step 1 UI: approved. No demo/sample card or controls remain.
 

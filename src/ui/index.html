@@ -13,6 +13,7 @@
 <div id="selection" hidden class="selection"></div>
 <details><summary>Fine-tune your export <span>+</span></summary><div class="advanced"><label class="field">Filename<input id="filename" type="text" maxlength="120" placeholder="Conversation title"></label><label class="check"><input id="metadata" type="checkbox" checked> Include title, source and export time</label><label class="field">Remove exact text <span class="hint">One phrase per line. Changes the exported copy only.</span><textarea id="redact" rows="3" placeholder="Text to replace with [redacted]"></textarea></label></div></details>
 <p id="notice" class="notice" hidden></p>
+<section id="originalFiles" hidden aria-label="Retrieved original attachments"></section>
 <div id="progress" class="progress" hidden><label id="progressLabel" for="progressBar">Loading conversation</label><progress id="progressBar" aria-labelledby="progressLabel"></progress></div>
 <div class="actions"><button id="preview" class="secondary">Preview</button><button id="export" class="primary">Export conversation <span>↓</span></button><button id="cancel" hidden class="text-button">Cancel</button></div>
 <p id="status" role="status" aria-live="polite" class="status">No account. No upload. Everything stays local.</p>

@@ -10,6 +10,10 @@ For attachments, it snapshots already-loaded images where permitted, or fetches 
 
 Source conversation URLs omit query strings and fragments. Metadata can be disabled. Exact-text redaction changes only the exported copy. Because pixel content cannot be safely text-redacted, enabling redaction omits images and attached PDF pages; it does not run OCR.
 
+On ChatGPT, capture may open a recognized attachment card and activate its visible Download control. During that action, a temporary page adapter observes window.open and programmatic link clicks to obtain a same-origin HTTPS file URL. It restores those methods afterward or on timeout/cancellation and closes a newly opened viewer when identified. It does not inspect private application state or tokens. Unsupported viewers produce an explicit failure note.
+
+Retrieved PPTX originals can be saved unchanged through a separate Save original button; their slides are not yet rendered in exports. Originals stay in the export view's memory, not extension storage, and are cleared on new capture, disconnect or view closure. Saving originals is disabled while text redaction is enabled; redaction does not modify Office files.
+
 Preferences and platform-enabled flags use chrome.storage.local. Conversation data, attachment bytes, rendered pages and PDF caches stay in memory. Closing the export view cancels work and discards that view's data. A short page-side lease cleans up interrupted sessions; it is not a background archive. Saved downloads remain until you delete them.
 
 Generated HTML contains no scripts or external resources. DOCX external file access is disabled. PDF.js, Mammoth, pdfmake, fonts and decoding resources are bundled locally. PDF generation downloads a file directly; it does not open a print dialog.

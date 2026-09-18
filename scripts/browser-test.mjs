@@ -6,6 +6,7 @@ import {captureConversation} from '../src/extract.js';
 import {PLATFORMS} from '../src/platforms.js';
 import {demoConversation} from '../tests/fixtures/demo.js';
 import {advancedTests} from '../tests/browser-scenarios.mjs';
+import {nativeFileTests} from '../tests/native-files.mjs';
 const root=resolve(import.meta.dirname,'..'),output=join(root,'test-output');
 await mkdir(output,{recursive:true});
 const candidates=[process.env.BROWSER_PATH,'C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe','C:/Program Files/Google/Chrome/Application/chrome.exe','/usr/bin/chromium'].filter(Boolean);
@@ -101,6 +102,7 @@ try{
     assert(!result.sourceUrl.includes('?'));
     console.log('Synthetic DOM capture passed: '+p.name);
   }
+  await nativeFileTests({ui,evaluate,page,send,sleep,fixtureSessions});
   await advancedTests({ui,evaluate,page,send,sleep,fixtureSessions,output});
   console.log('Extension load, demo removal, capture-on-action, default permissions, storage privacy, preview, selection, Unicode and three synthetic adapters passed.');
   console.log('Screenshot: '+join(output,'popup.png'));

@@ -37,7 +37,7 @@ Built for the study notes, debugging sessions, research and ideas you want to re
 | **🧰 Pick your format** | PDF, Markdown, HTML, plain text, JSON or CSV. |
 | **📝 Keep useful context** | Optional conversation metadata, custom filenames and literal text redaction. Model and effort values appear only when exposed by the page. |
 
-Accessible images, attached PDF pages, DOCX content and exposed artifacts can be included in PDF and HTML exports. **Native file cards and generated PPTX files are the next integration checkpoint—not a completed feature.**
+Accessible images, attached PDF pages, DOCX content and exposed artifacts can be included in PDF and HTML exports. **Experimental ChatGPT file-card retrieval and “Save original” for PPTX now pass synthetic Edge tests; live validation is pending. PPTX slides are not yet rendered into exports.**
 
 ### Platform progress
 
@@ -99,7 +99,7 @@ Keep the export view open while it works. After rebuilding, reload the extension
 
 ## 🧭 What comes next
 
-The next priorities are native ChatGPT file downloads, PPTX extraction, more reliable capture and reusable caching. Expanded settings, a saved library, additional formats and batch export follow in separate, testable steps.
+The next priorities are live validation of native ChatGPT file downloads, PPTX slide extraction, more reliable capture and reusable caching. Expanded settings, a saved library, additional formats and batch export follow in separate, testable steps.
 
 See the **[17-phase roadmap and acceptance checklist](Test.md)** for the full plan. Planned features are not advertised as already available.
 
