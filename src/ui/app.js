@@ -5,6 +5,7 @@ import { renderAsset, openPdf } from '../assets.js';
 import { createPdf } from '../pdf.js';
 import { resolveNativeFile } from '../native-file.js';
 import { verifyOfficeFile } from '../office-file.js';
+import { detectedAttachmentTypes } from '../attachment-selection.js';
 const $ = id => document.getElementById(id);
 const api = globalThis.chrome?.runtime?.id ? chrome : null;
 const query = new URLSearchParams(location.search);
@@ -15,7 +16,7 @@ const originals = new Map();
 function showOriginals() {
   $('originalFiles').replaceChildren(); $('originalFiles').hidden = !originals.size;
   if(!originals.size)return;
-  const hint=document.createElement('p');hint.className='hint';hint.textContent='PPTX originals retrieved. Slides are not yet included in exports. Original files are unchanged; saving is disabled while text redaction is enabled.';
+  const hint=document.createElement('p');hint.className='hint';hint.textContent='PPTX content is reflowed where readable; save the original for full slide fidelity. Originals are unchanged and cannot be saved while text redaction is enabled.';
   $('originalFiles').append(hint);
   for(const {name,blob} of originals.values()) {
     const button=document.createElement('button');button.className='secondary';button.textContent='Save original — '+name;
@@ -35,20 +36,32 @@ function progress({ stage, count, current, total }) {
 }
 function setBusy(value) {
   busy = value;
-  for (const id of ['preview','export','range','format','theme','metadata','redact','filename','settingsToggle']) $(id).disabled = value;
+  for (const id of ['preview','export','range','format','theme','metadata','redact','filename','settingsToggle','attachmentsToggle']) $(id).disabled = value;
   $('cancel').hidden = !value; $('progress').hidden = !value;
   $('selection').inert = value;
+  $('attachmentPanel').inert = value;
   $('shell').setAttribute('aria-busy', String(value));
   showOriginals();
 }
 function currentOptions() {
-  return { range: $('range').value, selected: [...$('selection').querySelectorAll('input:checked')].map(e => Number(e.value)), metadata: $('metadata').checked, redact: $('redact').value };
+  return { range: $('range').value, selected: [...$('selection').querySelectorAll('input:checked')].map(e => Number(e.value)), metadata: $('metadata').checked, redact: $('redact').value,
+    includeImages:$('includeImages').checked, attachmentTypes:[...$('attachmentTypes').querySelectorAll('input:checked')].map(e=>e.value) };
+}
+function initializeAttachments() {
+  $('attachmentTypes').replaceChildren(); $('includeImages').checked=true;
+  const types=detectedAttachmentTypes(conversation?.assets).filter(([type])=>type!=='image');
+  for(const [type,count] of types) {
+    const label=document.createElement('label'), input=document.createElement('input');label.className='check';
+    input.type='checkbox';input.value=type;input.checked=true;label.append(input,document.createTextNode(type.toUpperCase()+' ('+count+')'));
+    $('attachmentTypes').append(label);
+  }
+  if(!types.length)$('attachmentTypes').textContent='No other attachment types detected.';
 }
 async function save() {
   if (api) await api.storage.local.set({ preferences: preferences({ format: $('format').value, theme: $('theme').value, metadata: $('metadata').checked, showButton: $('showButton').checked }) });
 }
 function showNotice(c) {
-  const problems = [...(c.capture?.warnings || []), ...(c.assets || []).filter(a => a.status !== 'ready').map(a => a.name + ': ' + a.error)];
+  const problems = [...(c.capture?.warnings || []), ...(c.assets || []).filter(a => a.status !== 'ready').map(a => a.name + ': ' + a.error), ...(c.assets||[]).flatMap(a=>(a.warnings||[]).map(w=>a.name+': '+w))];
   const unique = [...new Set(problems)];
   const included = c.assets?.filter(a => a.status === 'ready').length || 0;
   $('notice').textContent = c.messages.length + ' messages captured' + (included ? ' · ' + included + ' attachments included' : '') + '. ' +
@@ -139,8 +152,6 @@ async function ensureConversation(signal) {
           totalSize+=buffer.byteLength;
           if(totalSize>256*1024*1024)throw new Error('Attachments exceed the safe memory budget (256 MB).');
           originals.set(meta.id,{name:meta.name,blob:new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'})});
-          rendered.push({...meta,status:'retrieved',error:'PPTX container retrieved; slide rendering is not implemented. Save the original from Ternote.'});
-          continue;
         }
         const result = await renderAsset(meta, buffer, { signal, onProgress: progress });
         totalSize += JSON.stringify(result).length;
@@ -151,7 +162,7 @@ async function ensureConversation(signal) {
     signal.throwIfAborted();
     c.assets = rendered; conversation = c; sourceUrl = tab.url; revision++; pdfCache = undefined;
     selectionInitialized = false; $('selection').replaceChildren(); $('filename').value = c.title;
-    showNotice(c);
+    initializeAttachments();showNotice(c);
   } finally { if(!conversation){originals.clear();showOriginals();} await releaseCapture(); }
 }
 function prepared() {
@@ -267,6 +278,13 @@ $('preview').onclick = () => run('preview'); $('export').onclick = () => run('do
 $('previousPage').onclick = () => showPdfPage(pageNumber - 1).catch(e => status(e.message,true));
 $('nextPage').onclick = () => showPdfPage(pageNumber + 1).catch(e => status(e.message,true));
 $('settingsToggle').onclick = () => { $('settings').hidden = !$('settings').hidden; };
+$('attachmentsToggle').onclick = async () => {
+  if(!conversation)await run('capture');
+  if(!conversation)return;
+  $('attachmentPanel').hidden=!$('attachmentPanel').hidden;
+  $('attachmentsToggle').setAttribute('aria-expanded',String(!$('attachmentPanel').hidden));
+};
+$('attachmentPanel').addEventListener('change',invalidate);
 $('range').onchange = async () => {
   invalidate();
   if ($('range').value === 'selected') {

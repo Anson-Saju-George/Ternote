@@ -1,5 +1,13 @@
 # Sequential visual checkpoints
 
+## Current handoff — inline attachments and type selection
+
+The owner confirmed native PPTX original downloading. New candidate: inline PPTX text/tables/raster images in slide order, common native text files, and an Attachments button with detected-type checkboxes plus a separate conversation-image toggle. Filtering composes with message selection and reuses captured data; it does not prevent retrieval. PPTX is reflowed, not a slide replica. No Excel or legacy Office conversion claim. Original files remain saveable, except under redaction.
+
+Next: reload normal Edge and visually compare the user's deck against the inline PDF. Check before/after conversation flow, type toggles, supported/unsupported slide content notes and original download. Approve this checkpoint before further format expansion; then resume Phase 6 capture reliability/caching or address observed attachment gaps. Historical pre-reflow notes follow.
+
+Pagination follow-up: a continuation label can be stranded at a page bottom. Do not add unconditional keepWithHeaderRows to conversation tables: that experiment dropped the 180-line nested code fixture and was reverted. Preserve the existing long-code regression while designing a block-aware fix. Small PPTX raster images now avoid upscaling; the ordinary image/document-page sizing remains unchanged.
+
 ## Resume checkpoint — 2026-09-18
 
 Native retrieval candidate implemented and tested: recognized ChatGPT PDF/DOCX/PPTX buttons resolve through a filename-matched visible viewer Download action. PDF/DOCX use the existing rendering pipeline; PPTX originals can be saved unchanged from the export view. Slides are not yet included in exports. No new permissions or runtime dependencies were added. 29 unit tests, source/permission checks, build and the full isolated Edge suite passed, including exact-byte original downloads, cancellation and wrong-file rejection. Original saving is disabled under redaction; originals are memory-only and cleared with the capture/view lifecycle.

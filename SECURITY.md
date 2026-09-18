@@ -4,11 +4,15 @@ This is an unpublished development build. Select a reporting contact before rele
 
 Page content is untrusted data. Export text is escaped. HTML preview uses a sandboxed iframe without scripts or modals, and exported HTML allows only inline styling and embedded raster images. There are no active artifact previews.
 
-Attachment acquisition accepts only resource URLs already present in the enabled conversation DOM. It rejects non-HTTPS remote URLs, obvious local/IP targets, credentials in URLs, redirects, and unsupported data schemes. It does not enumerate private APIs or scrape app state. CORS and site access controls still apply.
+Attachment acquisition accepts resource URLs present in the enabled conversation DOM, or same-origin HTTPS URLs exposed by a recognized ChatGPT viewer's visible Download action. That adapter matches the filename, validates the requesting extension/tab/capture session, temporarily observes window.open/programmatic anchor clicks, and restores methods on completion, cancellation or timeout. It does not enumerate private APIs or scrape app state. URL credentials, redirects, unsupported schemes and obvious local/IP remote targets are rejected. CORS and site access controls still apply.
 
 PDF/DOCX parsing uses local libraries. PDF JavaScript evaluation is disabled. DOCX runs in a terminable worker with external file access off, a ZIP expansion check and a timeout. Converter HTML is parsed in an inert template then rebuilt as a constrained block model; raw markup and external image URLs never enter the export. Files, raster sizes and aggregate memory have explicit budgets, and failures are disclosed.
 
 The PDF generator runs in a dedicated worker. Cancellation terminates workers and aborts capture/fetching. Navigation and permission removal invalidate capture. Page-side jobs expire after a missed heartbeat; completed data is explicitly released.
+
+PPTX extraction uses a terminable worker with bounded native decompression and CRC32/actual-size checks for extracted parts. XML containing DOCTYPE or ENTITY declarations is rejected. Package relationship paths are constrained; external images are not fetched. Office scripts/macros/embedded objects are never executed. Reflowed content is inert text/tables/raster images, with unsupported elements reported. Structural/checksum checks are not malware scanning; unchanged originals should still be treated as untrusted files.
+
+Attachment-type and conversation-image controls filter the export, not capture. Original PPTX downloads are an explicit separate action and are disabled while text redaction is enabled. Embedded document pixels are omitted under redaction; editable text is redacted without changing the stored original bytes.
 
 Literal redaction removes text from structured exports and omits unredactable pixel content. Selected-message exports exclude unrelated assets. CSV formulas are neutralized and filenames reject path separators, controls and reserved device names.
 

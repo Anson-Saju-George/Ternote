@@ -5,7 +5,7 @@ All libraries are installed from their open-source npm packages with exact direc
 - PDF.js / pdfjs-dist 6.3.289 — Apache-2.0. Reads and renders PDF pages. JS, worker, character maps, standard fonts, WASM and ICC resources are local.
 - Mammoth 1.12.3 — BSD-2-Clause. Converts DOCX in a worker, with external file access and embedded style maps disabled. Its output is normalized rather than trusted as HTML.
 - pdfmake 0.3.11 — MIT. Typesets the original conversation layout and returns real PDF bytes.
-- JSZip 3.10.1 — test-only direct dependency for independently generated DOCX fixtures; also a transitive Mammoth dependency.
+- JSZip 3.10.1 — test-only direct dependency for independently generated DOCX/PPTX fixtures; also a transitive Mammoth dependency. The PPTX product reader uses native DecompressionStream, not an added ZIP dependency.
 - Roboto 3.014 (2025), distributed with pdfmake — SIL OFL. Its license is preserved from the official Roboto repository.
 - Noto Sans Devanagari, Malayalam and Tamil (Regular/Bold) — SIL OFL. From the official archived notofonts/noto-fonts repository, hinted/ttf folders.
 - Noto Emoji — SIL OFL. From google/fonts, ofl/notoemoji/NotoEmoji[wght].ttf. Embedded monochrome glyphs, no runtime font download.

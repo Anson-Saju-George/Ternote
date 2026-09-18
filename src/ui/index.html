@@ -11,6 +11,12 @@
 <div class="field-grid"><label>Format<select id="format"><option value="markdown">Markdown .md</option><option value="pdf">PDF document .pdf</option><option value="html">Web document .html</option><option value="text">Plain text .txt</option><option value="json">Structured data .json</option><option value="csv">Spreadsheet .csv</option></select></label><label>Appearance<select id="theme"><option value="light">Paper · light</option><option value="dark">Midnight · dark</option></select></label></div>
 <label class="field">Messages<select id="range"><option value="all">Entire conversation</option><option value="user">My messages only</option><option value="assistant">Assistant messages only</option><option value="selected">Choose messages…</option></select></label>
 <div id="selection" hidden class="selection"></div>
+<button id="attachmentsToggle" class="secondary" aria-expanded="false" aria-controls="attachmentPanel">Attachments</button>
+<section id="attachmentPanel" class="card" hidden aria-label="Attachment selection">
+<label class="check"><input id="includeImages" type="checkbox" checked> Include conversation images</label>
+<fieldset><legend>Other attachments</legend><div id="attachmentTypes"></div></fieldset>
+<p class="hint">Choose file types to include within selected messages. Embedded document images follow their document. These choices affect exports, not capture.</p>
+</section>
 <details><summary>Fine-tune your export <span>+</span></summary><div class="advanced"><label class="field">Filename<input id="filename" type="text" maxlength="120" placeholder="Conversation title"></label><label class="check"><input id="metadata" type="checkbox" checked> Include title, source and export time</label><label class="field">Remove exact text <span class="hint">One phrase per line. Changes the exported copy only.</span><textarea id="redact" rows="3" placeholder="Text to replace with [redacted]"></textarea></label></div></details>
 <p id="notice" class="notice" hidden></p>
 <section id="originalFiles" hidden aria-label="Retrieved original attachments"></section>

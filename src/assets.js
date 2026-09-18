@@ -1,4 +1,5 @@
 import { workerJob } from './worker-job.js';
+import { presentationBlocks } from './pptx.js';
 export const safeRaster = value => typeof value === 'string' && /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+=*$/.test(value);
 export async function rasterize(blob, signal) {
   signal?.throwIfAborted();
@@ -90,6 +91,7 @@ export async function renderAsset(meta, buffer, { signal, onProgress = () => {} 
     } finally { signal?.removeEventListener('abort', abort); await task.destroy(); }
   }
   if (meta.kind === 'pdf' || meta.mime === 'application/pdf') throw new Error('The platform returned something other than PDF file bytes.');
+  if (meta.kind === 'pptx') return {...meta,status:'ready',...await presentationBlocks(buffer,{signal,onProgress,rasterize})};
   if (meta.kind === 'docx' || /wordprocessingml/.test(meta.mime)) {
     const result = await workerJob('./docx-worker.js', { buffer }, { signal, timeout: 60000 });
     return { ...meta, status: 'ready', kind: 'docx', blocks: await documentBlocks(result.html, signal),
@@ -98,10 +100,14 @@ export async function renderAsset(meta, buffer, { signal, onProgress = () => {} 
   if (meta.kind === 'image' || /^image\/(png|jpeg|gif|webp)$/.test(meta.mime)) {
     return { ...meta, status: 'ready', kind: 'image', ...await rasterize(new Blob([buffer], { type: meta.mime }), signal) };
   }
-  if (['txt','md','csv','json','html','svg','js','py','css'].includes(meta.kind)) {
+  if (['txt','md','csv','json','html','svg','js','py','css','log','xml','yaml','yml','ts','sql'].includes(meta.kind)) {
     if (buffer.byteLength > 8 * 1024 * 1024) throw new Error('Text artifact exceeds the safe rendering size (8 MB).');
+    // BOM-marked Windows text is common; unknown encodings fail rather than losing characters.
+    const encoding=bytes[0]===0xff&&bytes[1]===0xfe?'utf-16le':bytes[0]===0xfe&&bytes[1]===0xff?'utf-16be':'utf-8';
+    const text=new TextDecoder(encoding,{fatal:true}).decode(buffer);
+    if(text.includes('\0'))throw new Error('The attachment contains binary data, not supported text.');
     // HTML, SVG and executable artifacts are printed as source, never run.
-    return { ...meta, status: 'ready', kind: 'artifact', blocks: [{ type: 'code', language: meta.kind, text: new TextDecoder('utf-8', { fatal: true }).decode(buffer) }] };
+    return { ...meta, status: 'ready', kind: 'artifact', sourceKind: meta.kind, blocks: [{ type: 'code', language: meta.kind, text }] };
   }
   throw new Error('This attachment format is not yet supported.');
 }

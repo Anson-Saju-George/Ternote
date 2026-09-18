@@ -16,7 +16,9 @@ export function pdfDefinition(c, theme = 'light') {
   function imageBlock(image, documentPage = false) {
     if (!raster(image.data)) return text('Image unavailable.', { style: 'note' });
     const key = 'image' + (++imageId); images[key] = image.data;
-    return { image: key, fit: [437, documentPage ? 600 : 250], alignment: 'center', margin: [0, 6, 0, 5] };
+    const fit=[437, documentPage ? 600 : 250];
+    if(image.preventUpscale && image.width>0 && image.height>0) { fit[0]=Math.min(fit[0],image.width*.75);fit[1]=Math.min(fit[1],image.height*.75); }
+    return { image: key, fit, alignment: 'center', margin: [0, 6, 0, 5] };
   }
   function block(b) {
     if (b.type === 'asset') {

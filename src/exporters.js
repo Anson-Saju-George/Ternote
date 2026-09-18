@@ -1,4 +1,5 @@
 import { numberedMessages } from './document-identity.js';
+import { attachmentType } from './attachment-selection.js';
 export const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function filename(value,extension){
   let name=Array.from(String(value||'conversation').normalize('NFC').replace(/[\u0000-\u001f\u007f<>:"/\\|?*]/g,'-')).slice(0,100).join('').replace(/[. ]+$/g,'').trim()||'conversation';
@@ -10,8 +11,15 @@ export function csvCell(value){
   if(/^[\s\u0000-\u001f]*[=+\-@]/u.test(s)||/^[\t\r\n]/.test(s))s="'"+s;
   return '"'+s.replace(/"/g,'""')+'"';
 }
-export function prepareConversation(c,{range='all',selected=[],metadata=true,redact=''}={}){
+export function prepareConversation(c,{range='all',selected=[],metadata=true,redact='',attachmentTypes=null,includeImages=true}={}){
+  const byId=new Map((c.assets||[]).map(asset=>[asset.id,asset]));
   const messages=numberedMessages(c.messages).filter((m,i)=>range==='selected'?selected.includes(i):['user','assistant'].includes(range)?m.role===range:true)
+    .map(m=>({...m,blocks:m.blocks.filter(b=>{
+      if(b.type==='image')return includeImages;
+      if(b.type!=='asset')return true;
+      const type=attachmentType(byId.get(b.assetId)||{kind:'other'});
+      return type==='image'?includeImages:attachmentTypes===null||attachmentTypes.includes(type);
+    })}))
     .map(m=>metadata?m:Object.fromEntries(Object.entries(m).filter(([key])=>!['model','effort','timestamp'].includes(key))));
   if(!messages.length)throw new Error('Choose at least one message.');
   const terms=redact.split('\n').map(s=>s.trim()).filter(Boolean);

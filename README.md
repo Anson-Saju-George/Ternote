@@ -37,7 +37,9 @@ Built for the study notes, debugging sessions, research and ideas you want to re
 | **🧰 Pick your format** | PDF, Markdown, HTML, plain text, JSON or CSV. |
 | **📝 Keep useful context** | Optional conversation metadata, custom filenames and literal text redaction. Model and effort values appear only when exposed by the page. |
 
-Accessible images, attached PDF pages, DOCX content and exposed artifacts can be included in PDF and HTML exports. **Experimental ChatGPT file-card retrieval and “Save original” for PPTX now pass synthetic Edge tests; live validation is pending. PPTX slides are not yet rendered into exports.**
+Accessible images, attached PDF pages, DOCX content, reflowed PPTX slide content and common text files can be included in PDF and HTML exports, at their place in the conversation. Use **Attachments** to choose detected file types, with a separate image toggle. PPTX originals remain available through **Save original**.
+
+Native PPTX original downloading has been confirmed by the owner in ChatGPT. Inline slide content and attachment selection are the next visual-review checkpoint; this is not a claim of PowerPoint-perfect rendering or universal file support.
 
 ### Platform progress
 
@@ -99,7 +101,7 @@ Keep the export view open while it works. After rebuilding, reload the extension
 
 ## 🧭 What comes next
 
-The next priorities are live validation of native ChatGPT file downloads, PPTX slide extraction, more reliable capture and reusable caching. Expanded settings, a saved library, additional formats and batch export follow in separate, testable steps.
+The next priorities are live review of inline attachments and type selection, broader file-card coverage, more reliable capture and reusable caching. Expanded settings, a saved library, additional formats and batch export follow in separate, testable steps.
 
 See the **[17-phase roadmap and acceptance checklist](Test.md)** for the full plan. Planned features are not advertised as already available.
 
@@ -109,7 +111,8 @@ See the **[17-phase roadmap and acceptance checklist](Test.md)** for the full pl
 - Reaching both visible scroll boundaries does not prove that a platform exposed its complete server-side history. Review completeness warnings.
 - Expired, protected or card-only attachments may be unavailable. The extension reports missing files rather than pretending they were included.
 - Attached PDFs are rendered as images of their pages; their original text is not searchable in the combined PDF. DOCX content is reflowed, not reproduced with Word-perfect layout.
-- PPTX rendering, embedded original-file bundles and legacy `.doc`/`.ppt` conversion are not currently implemented.
+- PPTX text, tables and embedded raster images are reflowed in slide order. Original positioning, themes, master-slide content, notes, shapes, charts, SmartArt, media and animations are not reproduced. Keep the original for full fidelity.
+- TXT, Markdown, CSV, JSON, HTML, XML, YAML, logs and supported code files are displayed as inert text/source. Excel, legacy `.doc`/`.ppt`, and embedded original-file bundles are not implemented.
 - Complex equations, merged tables, some writing systems and platform-specific artifacts still need fidelity work.
 - Exact-text redaction cannot safely remove text from image pixels. Images and attached PDF pages are omitted when it is enabled.
 - Browser memory is finite. Explicit safety limits apply; there is no promise of unlimited file sizes or flawless capture of every chat.

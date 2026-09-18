@@ -81,7 +81,7 @@ export async function captureConversation(config, options = {}) {
     if (el.tagName === 'A') {
       const label = el.getAttribute('download') || plain(el) || 'Attachment';
       const url = el.getAttribute('href') || '';
-      const ext = (label.match(/\.(pdf|docx|pptx|txt|md|csv|json|html|svg|js|py|css)\b/i) || url.split(/[?#]/)[0].match(/\.(pdf|docx|pptx|txt|md|csv|json|html|svg|js|py|css)$/i))?.[1]?.toLowerCase();
+      const ext = (label.match(/\.(pdf|docx|pptx|txt|md|csv|json|html|svg|js|py|css|log|xml|yaml|yml|ts|sql)\b/i) || url.split(/[?#]/)[0].match(/\.(pdf|docx|pptx|txt|md|csv|json|html|svg|js|py|css|log|xml|yaml|yml|ts|sql)$/i))?.[1]?.toLowerCase();
       if (ext || el.hasAttribute('download')) {
         return { type: 'asset', assetId: asset(el, ext || 'unknown', url, label), name: label };
       }
@@ -101,13 +101,16 @@ export async function captureConversation(config, options = {}) {
       else if (child.matches('button,[role="button"]')) {
         for (const img of child.querySelectorAll('img')) if (visible(img)) { flush(); const b = resourceBlock(img); if (b) output.push(b); }
         const name = (child.textContent || '').trim();
-        const fileName = name.replace(/\s+/g,' ').match(/^(.+?\.(pdf|docx|pptx))(?:$|\s+(?:Presentation|Document|PDF)(?:\s+file)?$)/i);
+        const fileName = name.replace(/\s+/g,' ').match(/^(.+?\.(pdf|docx|pptx|txt|md|csv|json|html|svg|js|py|css|log|xml|yaml|yml|ts|sql))(?:$|\s+(?:Presentation|Document|PDF|Text|Spreadsheet|File|Code|JSON)(?:\s+file)?$)/i);
         if (options.nativeFiles && config.id==='chatgpt' && fileName && fileName[1].length<=200 && !child.querySelector('img') && child.closest('[data-message-author-role]')) {
           flush(); const id=asset(child,fileName[2].toLowerCase(),null,fileName[1]);
           assets.get(id).native=true;
           output.push({type:'asset',assetId:id,name:fileName[1]});
         } else if (/\.(pdf|docx?|pptx?|xlsx?|odt|ods|odp|epub|zip|csv|txt|md)\b/i.test(name)) {
-          flush(); output.push({type:'attachment-note',text:name.slice(0,200)+': file card detected, but this build cannot resolve its download yet.'});
+          const kind=name.match(/\.(pdf|docx?|pptx?|xlsx?|odt|ods|odp|epub|zip|csv|txt|md)\b/i)[1].toLowerCase();
+          const id=asset(child,kind,null,name);Object.assign(assets.get(id),{attempted:true,error:'File card detected, but its contents cannot be retrieved by this build.'});
+          delete assets.get(id).element;
+          flush(); output.push({type:'asset',assetId:id,name:name.slice(0,200)});
           warnings.add('File cards were found without readable URLs. Their contents are not included in this export yet.');
         }
       }

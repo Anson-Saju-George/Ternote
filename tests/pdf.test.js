@@ -86,3 +86,7 @@ test('document attachment pages keep readable size without forced breaks',()=>{
   assert(nodes(def.content).filter(n=>n.image).every(n=>n.fit[1]===600));
   assert(!nodes(def.content).some(n=>n.pageBreak));
 });
+test('small presentation images do not upscale into large PDF blocks',()=>{
+  const c={messages:[{role:'assistant',blocks:[{type:'asset',assetId:'deck'}]}],assets:[{id:'deck',kind:'pptx',status:'ready',name:'Slides',blocks:[{type:'image',data:image,width:40,height:20,preventUpscale:true}]}]};
+  assert.deepEqual(nodes(pdfDefinition(c).content).find(n=>n.image).fit,[30,15]);
+});
