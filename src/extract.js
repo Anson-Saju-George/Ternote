@@ -100,8 +100,8 @@ export async function captureConversation(config, options = {}) {
       // ChatGPT image previews are buttons. Read their images without exporting control labels.
       else if (child.matches('button,[role="button"]')) {
         for (const img of child.querySelectorAll('img')) if (visible(img)) { flush(); const b = resourceBlock(img); if (b) output.push(b); }
-        const name = (child.textContent || '').trim();
-        const fileName = name.replace(/\s+/g,' ').match(/^(.+?\.(pdf|docx|pptx|txt|md|csv|json|html|svg|js|py|css|log|xml|yaml|yml|ts|sql))(?:$|\s+(?:Presentation|Document|PDF|Text|Spreadsheet|File|Code|JSON)(?:\s+file)?$)/i);
+        const name = (child.innerText || child.textContent || '').trim();
+        const fileName = name.replace(/\s+/g,' ').match(/^(.+?\.(pdf|docx|pptx|txt|md|csv|json|html|svg|js|py|css|log|xml|yaml|yml|ts|sql))(?:$|\s+(?:Open file|Presentation|Document|PDF|Text|Spreadsheet|File|Code|JSON)(?:\s+file)?$)/i);
         if (options.nativeFiles && config.id==='chatgpt' && fileName && fileName[1].length<=200 && !child.querySelector('img') && child.closest('[data-message-author-role]')) {
           flush(); const id=asset(child,fileName[2].toLowerCase(),null,fileName[1]);
           assets.get(id).native=true;
@@ -206,7 +206,23 @@ export async function captureConversation(config, options = {}) {
         check(); a.blob = undefined;
         a.error = e.name === 'TypeError' ? 'The platform blocked access to this file (CORS, expired link, or login required).' : e.message;
         warnings.add(a.name + ': ' + a.error);
-      } finally { if(a.marker && a.element?.getAttribute('data-ternote-file')===a.marker)a.element.removeAttribute('data-ternote-file'); delete a.element; delete a.url; delete a.marker; }
+      } finally {
+        try {
+          if(a.native&&a.kind==='pptx'&&options.nativePreviews&&!controller.signal.aborted) {
+            const result=await new Promise((resolve,reject)=>{
+              const aborted=()=>finish(new Error('Capture cancelled.'));
+              const timer=setTimeout(()=>finish(new Error('Slide preview capture timed out.')),310000);
+              function finish(error,value){clearTimeout(timer);controller.signal.removeEventListener('abort',aborted);error?reject(error):resolve(value);}
+              controller.signal.addEventListener('abort',aborted,{once:true});
+              Promise.resolve().then(()=>globalThis.chrome.runtime.sendMessage({type:'native-slide-request',token,marker:a.marker,name:a.name,assetId:a.id,url:originalUrl,budget:Math.min(64*1024*1024,256*1024*1024-rawBytes)})).then(value=>finish(null,value),()=>finish(new Error('Unable to inspect the slide viewer.')));
+            });
+            check();
+            if(result?.error||!a.previewPages?.length)a.previewError=result?.error||'Original slide previews could not be captured.';
+            else rawBytes+=result.bytes;
+          }
+        }catch(error){a.previewError=error.message;delete a.previewPages;}
+        finally {if(a.marker && a.element?.getAttribute('data-ternote-file')===a.marker)a.element.removeAttribute('data-ternote-file'); delete a.element; delete a.url; delete a.marker;}
+      }
     }
   }
   function expansionControls(el) {
@@ -352,7 +368,8 @@ export async function captureConversation(config, options = {}) {
       ...(models.length ? { model: models.join(', '), modelSource: 'message metadata' } : {}),
       ...(efforts.length ? { effort: efforts.join(', ') } : {}),
       capture: { method: 'scroll-and-collect', messageCount: handle.messages.length, warnings: [...warnings], verification: 'Both visible scroll boundaries settled. The platform may still withhold history or attachments.' },
-      assets: [...assets.values()].map(({ id, kind, name, blob, error }) => ({ id, kind, name, size: blob?.size || 0, mime: blob?.type || '', error }))
+      assets: [...assets.values()].map(({ id, kind, name, blob, error, previewPages, previewError }) => ({ id, kind, name, size: blob?.size || 0, mime: blob?.type || '', error,previewError,
+        ...(previewPages?{previewPages:previewPages.map(p=>({width:p.width,height:p.height,size:p.blob.size}))}:{}) }))
     };
     handle.summary = summary;
     progress('Conversation loaded', { done: true });
@@ -399,4 +416,14 @@ export async function readCaptureAsset(token, id, offset) {
 export function cancelCapture(token) {
   const job = globalThis.__personalExportCapture;
   if (job && (!token || job.token === token)) job.dispose();
+}
+export async function readCapturePreview(token,id,index,offset) {
+  const job=globalThis.__personalExportCapture;
+  if(!job||job.token!==token||job.controller.signal.aborted)throw new Error('Slide capture session expired.');
+  job.lastAccess=Date.now();const page=job.assets.get(id)?.previewPages?.[index];
+  if(!page?.blob||!Number.isInteger(offset)||offset<0)throw new Error('Slide preview bytes unavailable.');
+  const bytes=new Uint8Array(await page.blob.slice(offset,offset+256*1024).arrayBuffer());let binary='';
+  for(let at=0;at<bytes.length;at+=8192)binary+=String.fromCharCode(...bytes.subarray(at,at+8192));
+  const done=offset+bytes.length>=page.blob.size;if(done)page.blob=undefined;
+  return {base64:btoa(binary),next:offset+bytes.length,done};
 }

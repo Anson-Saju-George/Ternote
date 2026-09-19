@@ -53,24 +53,25 @@ export async function nativeFileTests({evaluate,page,send,sleep,fixtureSessions,
   // File verification runs in the real extension page too, not just Node's ArrayBuffer realm.
   const verified=await evaluate(ui,"(async()=>{const {verifyOfficeFile}=await import('../office-file.js');return verifyOfficeFile(Uint8Array.from(atob('"+pptx+"'),c=>c.charCodeAt(0)).buffer,'pptx')})()");
   assert.equal(verified.kind,'pptx');
-  const fixture={title:'Native PPTX fixture',platform:'chatgpt',messages:[{role:'assistant',blocks:[{type:'asset',assetId:'ppt',name:'generated.pptx'}]}],assets:[{id:'ppt',name:'generated.pptx',kind:'pptx',size:Buffer.from(pptx,'base64').length,mime:'application/octet-stream'}]};
+  const slide=await evaluate(ui,"(()=>{const c=document.createElement('canvas');c.width=600;c.height=338;const x=c.getContext('2d');x.fillStyle='#204a37';x.fillRect(0,0,600,338);x.fillStyle='white';x.font='32px sans-serif';x.fillText('Original slide preview',40,100);return c.toDataURL('image/png').split(',')[1]})()");
+  const fixture={title:'Native PPTX fixture',platform:'chatgpt',messages:[{role:'assistant',blocks:[{type:'asset',assetId:'ppt',name:'generated.pptx'}]}],assets:[{id:'ppt',name:'generated.pptx',kind:'pptx',size:Buffer.from(pptx,'base64').length,mime:'application/octet-stream',previewPages:[{width:600,height:338,size:Buffer.from(slide,'base64').length}]}]};
   await evaluate(ui,`window.savedScripts=chrome.scripting.executeScript;window.savedTabs=chrome.tabs.query;window.savedAnchorClick=HTMLAnchorElement.prototype.click;
     chrome.tabs.query=async()=>[{id:999,url:'https://chatgpt.com/c/native-ui'}];
     window.nativeCaptureCount=0;
-    chrome.scripting.executeScript=async({func})=>{if(func.name==='captureConversation')window.nativeCaptureCount++;return [{result:func.name==='captureConversation'?${JSON.stringify(fixture)}:func.name==='readCaptureAsset'?{base64:'${pptx}',done:true,next:${Buffer.from(pptx,'base64').length}}:undefined}];};
+    chrome.scripting.executeScript=async({func})=>{if(func.name==='captureConversation')window.nativeCaptureCount++;return [{result:func.name==='captureConversation'?${JSON.stringify(fixture)}:func.name==='readCaptureAsset'?{base64:'${pptx}',done:true,next:${Buffer.from(pptx,'base64').length}}:func.name==='readCapturePreview'?{base64:'${slide}',done:true,next:${Buffer.from(slide,'base64').length}}:undefined}];};
     document.getElementById('preview').click();`);
   for(let i=0;i<80;i++){if(await evaluate(ui,"!document.getElementById('preview').disabled&&!!document.querySelector('#originalFiles button')"))break;await sleep(100);}
   assert(await evaluate(ui,"!document.getElementById('originalFiles').hidden&&document.querySelector('#originalFiles button').textContent.includes('generated.pptx')"));
-  assert(await evaluate(ui,"document.getElementById('notice').textContent.includes('PPTX content is reflowed')"));
+  assert(await evaluate(ui,"document.getElementById('notice').textContent.includes('Slides captured from ChatGPT previews')"));
   await evaluate(ui,"document.getElementById('attachmentsToggle').click()");
   assert(await evaluate(ui,"!document.getElementById('attachmentPanel').hidden&&document.querySelector('#attachmentTypes input[value=pptx]').checked"));
   await evaluate(ui,"document.querySelector('#attachmentTypes input[value=pptx]').click();document.getElementById('preview').click()");
   for(let i=0;i<80;i++){if(await evaluate(ui,"!document.getElementById('preview').disabled"))break;await sleep(100);}
   assert.equal(await evaluate(ui,'window.nativeCaptureCount'),1,'Changing attachment selection must not recapture the conversation.');
-  assert(await evaluate(ui,"(async()=>!(await(await fetch(document.getElementById('previewFrame').src)).text()).includes('FIRST SLIDE marker'))()"));
+  assert(await evaluate(ui,"(async()=>!(await(await fetch(document.getElementById('previewFrame').src)).text()).includes('data:image/jpeg'))()"));
   await evaluate(ui,"document.querySelector('#attachmentTypes input[value=pptx]').click();document.getElementById('preview').click()");
   for(let i=0;i<80;i++){if(await evaluate(ui,"!document.getElementById('preview').disabled"))break;await sleep(100);}
-  assert(await evaluate(ui,"(async()=>(await(await fetch(document.getElementById('previewFrame').src)).text()).includes('FIRST SLIDE marker'))()"));
+  assert(await evaluate(ui,"(async()=>(await(await fetch(document.getElementById('previewFrame').src)).text()).includes('data:image/jpeg'))()"));
   await evaluate(ui,"HTMLAnchorElement.prototype.click=function(){window.savedOriginalUrl=this.href;window.savedOriginalName=this.download;};document.querySelector('#originalFiles button').click()");
   assert.equal(await evaluate(ui,'window.savedOriginalName'),'generated.pptx');
   const original=await evaluate(ui,"(async()=>{const b=new Uint8Array(await(await fetch(window.savedOriginalUrl)).arrayBuffer());return btoa(String.fromCharCode(...b))})()");
@@ -80,6 +81,6 @@ export async function nativeFileTests({evaluate,page,send,sleep,fixtureSessions,
   await evaluate(ui,"document.getElementById('redact').value='';document.getElementById('redact').dispatchEvent(new Event('input'));HTMLAnchorElement.prototype.click=window.savedAnchorClick;chrome.scripting.executeScript=window.savedScripts;chrome.tabs.query=window.savedTabs;document.getElementById('preview').click()");
   for(let i=0;i<80;i++){if(await evaluate(ui,"!document.getElementById('preview').disabled&&document.getElementById('originalFiles').hidden"))break;await sleep(100);}
   assert(await evaluate(ui,"document.getElementById('originalFiles').hidden"));
-  console.log('PPTX Save original preserves bytes, reports reflow limits, respects redaction and clears on conversation change.');
+  console.log('PPTX Save original preserves bytes; complete preview images respect selection/redaction and clear on conversation change.');
   console.log('Native uploaded/generated cards: viewer matching, method restoration, wrong-file rejection, byte transfer and Office verification passed.');
 }

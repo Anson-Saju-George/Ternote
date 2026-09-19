@@ -26,7 +26,7 @@ export function pdfDefinition(c, theme = 'light') {
       if (!a || a.status !== 'ready') return text((b.name || 'Attachment') + ' — ' + (a?.error || 'not available'), { style: 'note' });
       if (a.kind === 'image') return [imageBlock(a), text(a.name, { style: 'caption' })];
       const nodes = [text(a.name, { style: 'attachment' })];
-      if (a.pages) a.pages.forEach(page => { nodes.push({stack:[imageBlock(page, true), text(page.name, { style: 'caption' })],unbreakable:true}); });
+      if (a.pages) a.pages.forEach(page => { nodes.push({stack:[imageBlock(page, !a.slidePreviews), text(page.name, { style: 'caption' })],unbreakable:true}); });
       if (a.blocks) nodes.push(...a.blocks.flatMap(block));
       for (const warning of a.warnings || []) nodes.push(text(warning, { style: 'note' }));
       return nodes;

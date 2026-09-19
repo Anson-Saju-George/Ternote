@@ -2,6 +2,8 @@ node_modules/
 dist/
 release/
 test-output/
+# User-provided live-chat screenshot, not a public project asset.
+/image.png
 # Imported private research archive; retained locally, not published with Ternote.
 docs/research/
 docs/README.md

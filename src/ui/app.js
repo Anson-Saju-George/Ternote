@@ -1,11 +1,12 @@
 import { PLATFORMS, platformFor, preferences } from '../platforms.js';
-import { captureConversation, cancelCapture, readCaptureBatch, readCaptureAsset, touchCapture } from '../extract.js';
+import { captureConversation, cancelCapture, readCaptureBatch, readCaptureAsset, readCapturePreview, touchCapture } from '../extract.js';
 import { exportConversation, prepareConversation, filename, messageText } from '../exporters.js';
 import { renderAsset, openPdf } from '../assets.js';
 import { createPdf } from '../pdf.js';
 import { resolveNativeFile } from '../native-file.js';
 import { verifyOfficeFile } from '../office-file.js';
 import { detectedAttachmentTypes } from '../attachment-selection.js';
+import { captureSlidePreview } from '../slide-preview.js';
 const $ = id => document.getElementById(id);
 const api = globalThis.chrome?.runtime?.id ? chrome : null;
 const query = new URLSearchParams(location.search);
@@ -16,7 +17,7 @@ const originals = new Map();
 function showOriginals() {
   $('originalFiles').replaceChildren(); $('originalFiles').hidden = !originals.size;
   if(!originals.size)return;
-  const hint=document.createElement('p');hint.className='hint';hint.textContent='PPTX content is reflowed where readable; save the original for full slide fidelity. Originals are unchanged and cannot be saved while text redaction is enabled.';
+  const hint=document.createElement('p');hint.className='hint';hint.textContent='Save the original presentation. Exports use complete readable slide previews, never reconstructed text. Originals cannot be saved while text redaction is enabled.';
   $('originalFiles').append(hint);
   for(const {name,blob} of originals.values()) {
     const button=document.createElement('button');button.className='secondary';button.textContent='Save original — '+name;
@@ -115,7 +116,7 @@ async function ensureConversation(signal) {
   progress({ stage: 'Loading the entire conversation', count: 0 });
   heartbeat = setInterval(() => { if (captureToken) void inject(touchCapture,[captureToken]).catch(() => {}); }, 5000);
   try {
-    const summary = await inject(captureConversation, [platform, { token: captureToken, stream: true, nativeFiles: true }]);
+    const summary = await inject(captureConversation, [platform, { token: captureToken, stream: true, nativeFiles: true, nativePreviews:true }]);
     signal.throwIfAborted();
     if (!summary) throw new Error('Capture returned no content. Reload the chat and retry.');
     const c = { ...summary, messages: [] }; delete c.token;
@@ -136,22 +137,34 @@ async function ensureConversation(signal) {
       signal.throwIfAborted();
       const meta = summary.assets[index];
       progress({ stage: 'Preparing ' + meta.name, current: index + 1, total: summary.assets.length });
-      if (meta.error) { rendered.push({ ...meta, status: 'unavailable' }); continue; }
+      if (meta.error && !meta.previewPages?.length) { rendered.push({ ...meta, status: 'unavailable' }); continue; }
       try {
         if (totalSize >= 256 * 1024 * 1024) throw new Error('Rendered attachments exceed the safe memory budget (256 MB).');
         const parts = []; let offset = 0;
-        while (true) {
+        while (!meta.error) {
           signal.throwIfAborted();
           const part = await inject(readCaptureAsset, [captureToken, meta.id, offset]);
           parts.push(Uint8Array.from(atob(part.base64), c => c.charCodeAt(0))); offset = part.next;
           if (part.done) break;
         }
         const buffer = await new Blob(parts).arrayBuffer(); parts.length = 0;
-        if(meta.kind==='docx'||meta.kind==='pptx')verifyOfficeFile(buffer,meta.kind);
+        if(!meta.error&&(meta.kind==='docx'||meta.kind==='pptx'))verifyOfficeFile(buffer,meta.kind);
         if(meta.kind==='pptx') {
           totalSize+=buffer.byteLength;
           if(totalSize>256*1024*1024)throw new Error('Attachments exceed the safe memory budget (256 MB).');
-          originals.set(meta.id,{name:meta.name,blob:new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'})});
+          if(!meta.error)originals.set(meta.id,{name:meta.name,blob:new Blob([buffer],{type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'})});
+          if(!meta.previewPages?.length)throw new Error(meta.previewError||'Original slide previews were not available. Open the presentation in ChatGPT and retry. No reflowed text was substituted.');
+          const pages=[];
+          for(let pageIndex=0;pageIndex<meta.previewPages.length;pageIndex++) {
+            const chunks=[];let next=0;
+            while(true){signal.throwIfAborted();const part=await inject(readCapturePreview,[captureToken,meta.id,pageIndex,next]);chunks.push(Uint8Array.from(atob(part.base64),c=>c.charCodeAt(0)));next=part.next;if(part.done)break;}
+            const slide=await renderAsset({kind:'image',mime:'image/png',name:meta.name+' — slide '+(pageIndex+1)},await new Blob(chunks).arrayBuffer(),{signal});
+            totalSize+=slide.data.length;if(totalSize>256*1024*1024)throw new Error('Rendered slide previews exceed the safe memory budget.');
+            pages.push({type:'image',name:slide.name,data:slide.data,width:slide.width,height:slide.height});
+          }
+          const {previewPages,previewError,error,...details}=meta;
+          rendered.push({...details,status:'ready',pages,slidePreviews:true,warnings:['Slides captured from ChatGPT previews; preview resolution and fidelity depend on the platform.',...(error?['Original presentation download unavailable.']:[])]});
+          continue;
         }
         const result = await renderAsset(meta, buffer, { signal, onProgress: progress });
         totalSize += JSON.stringify(result).length;
@@ -266,6 +279,10 @@ async function renderPlatforms() {
   }
 }
 api?.runtime.onMessage.addListener((message, sender, reply) => {
+  if(busy&&sender.id===api.runtime.id&&sender.tab?.id===tab?.id&&sender.frameId===0&&message.type==='native-slide-request'&&message.token===captureToken&&message.url===tab.url&&platform?.id==='chatgpt'&&typeof message.assetId==='string'&&message.marker===captureToken+':'+message.assetId&&typeof message.name==='string'&&message.name.length<=200) {
+    api.scripting.executeScript({target:{tabId:tab.id},func:captureSlidePreview,args:[message.marker,message.name,message.token,message.assetId,message.url,message.budget]})
+      .then(result=>reply(result[0]?.result||{error:'No slide preview result.'}),()=>reply({error:'Unable to access the slide preview.'}));return true;
+  }
   if (busy && sender.id===api.runtime.id && sender.tab?.id===tab?.id && sender.frameId===0 && message.type==='native-file-request' && message.token===captureToken && message.url===tab.url && platform?.id==='chatgpt' && typeof message.marker==='string' && message.marker.startsWith(captureToken+':asset-') && typeof message.name==='string' && message.name.length<=200) {
     api.scripting.executeScript({target:{tabId:tab.id},world:'MAIN',func:resolveNativeFile,args:[message.marker,message.name,message.url]})
       .then(result=>reply(result[0]?.result||{error:'No file viewer result.'}),()=>reply({error:'Unable to access the native file viewer.'}));

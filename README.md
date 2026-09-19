@@ -37,9 +37,9 @@ Built for the study notes, debugging sessions, research and ideas you want to re
 | **🧰 Pick your format** | PDF, Markdown, HTML, plain text, JSON or CSV. |
 | **📝 Keep useful context** | Optional conversation metadata, custom filenames and literal text redaction. Model and effort values appear only when exposed by the page. |
 
-Accessible images, attached PDF pages, DOCX content, reflowed PPTX slide content and common text files can be included in PDF and HTML exports, at their place in the conversation. Use **Attachments** to choose detected file types, with a separate image toggle. PPTX originals remain available through **Save original**.
+Accessible images, attached PDF pages, DOCX content and common text files can be included in PDF and HTML exports, at their place in the conversation. A new ChatGPT PPTX candidate captures full-slide preview images through the visible viewer. Use **Attachments** to choose detected file types, with a separate image toggle. PPTX originals remain available through **Save original**.
 
-Native PPTX original downloading has been confirmed by the owner in ChatGPT. Inline slide content and attachment selection are the next visual-review checkpoint; this is not a claim of PowerPoint-perfect rendering or universal file support.
+Native PPTX original downloading has been confirmed by the owner in ChatGPT. Complete slide-preview capture is awaiting live visual review. It requires readable image/canvas previews and matching navigation controls; unsupported viewers report an error instead of substituting reconstructed slide text.
 
 ### Platform progress
 
@@ -111,7 +111,7 @@ See the **[17-phase roadmap and acceptance checklist](Test.md)** for the full pl
 - Reaching both visible scroll boundaries does not prove that a platform exposed its complete server-side history. Review completeness warnings.
 - Expired, protected or card-only attachments may be unavailable. The extension reports missing files rather than pretending they were included.
 - Attached PDFs are rendered as images of their pages; their original text is not searchable in the combined PDF. DOCX content is reflowed, not reproduced with Word-perfect layout.
-- PPTX text, tables and embedded raster images are reflowed in slide order. Original positioning, themes, master-slide content, notes, shapes, charts, SmartArt, media and animations are not reproduced. Keep the original for full fidelity.
+- PPTX export uses static ChatGPT slide-preview images where readable, preserving their displayed layout rather than reflowing text. Preview fidelity/resolution depends on ChatGPT. Protected frames, layered HTML/SVG viewers, ambiguous controls, or stalled slides can prevent capture. Animations, notes and editable slide content are not included; keep the original presentation.
 - TXT, Markdown, CSV, JSON, HTML, XML, YAML, logs and supported code files are displayed as inert text/source. Excel, legacy `.doc`/`.ppt`, and embedded original-file bundles are not implemented.
 - Complex equations, merged tables, some writing systems and platform-specific artifacts still need fidelity work.
 - Exact-text redaction cannot safely remove text from image pixels. Images and attached PDF pages are omitted when it is enabled.

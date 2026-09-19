@@ -1,5 +1,4 @@
 import { workerJob } from './worker-job.js';
-import { presentationBlocks } from './pptx.js';
 export const safeRaster = value => typeof value === 'string' && /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+=*$/.test(value);
 export async function rasterize(blob, signal) {
   signal?.throwIfAborted();
@@ -91,7 +90,7 @@ export async function renderAsset(meta, buffer, { signal, onProgress = () => {} 
     } finally { signal?.removeEventListener('abort', abort); await task.destroy(); }
   }
   if (meta.kind === 'pdf' || meta.mime === 'application/pdf') throw new Error('The platform returned something other than PDF file bytes.');
-  if (meta.kind === 'pptx') return {...meta,status:'ready',...await presentationBlocks(buffer,{signal,onProgress,rasterize})};
+  if (meta.kind === 'pptx') throw new Error('Original slide previews are required. Reflowed text is not substituted for slides.');
   if (meta.kind === 'docx' || /wordprocessingml/.test(meta.mime)) {
     const result = await workerJob('./docx-worker.js', { buffer }, { signal, timeout: 60000 });
     return { ...meta, status: 'ready', kind: 'docx', blocks: await documentBlocks(result.html, signal),

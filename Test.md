@@ -12,7 +12,7 @@ The owner accepted all implemented work through compact PDF/image layout. This d
 | 2 | Extension foundation | Built; release hardening remains |
 | 3 | Core UI & exports | Current implementation approved |
 | 4 | PDF layout & images | Current implementation approved |
-| 5 | Native attachments & PPTX | PPTX original download confirmed; inline reflow/type selection awaiting visual review |
+| 5 | Native attachments & PPTX | Original download confirmed; whole-slide preview capture awaiting live review |
 | 6 | Capture reliability & caching | Basic loading built; hardening/cache pending |
 | 7 | General & export settings | Basic controls built; expansion pending |
 | 8 | Selection & quick-export workflow | Basic selection built; expansion pending |
@@ -52,13 +52,13 @@ The owner accepted all implemented work through compact PDF/image layout. This d
 
 ## 5. Native attachments & PPTX
 
-2026-09-18: the owner confirmed native PPTX original downloading in ChatGPT. The next candidate adds inline PPTX text/tables/images, native text-file retrieval and an Attachments panel with detected-type checkboxes and independent conversation-image control. Reflow is not faithful slide reproduction. Broader live-file validation and visual approval remain; this phase is not complete.
+2026-09-19: native PPTX original download is confirmed. The owner rejected reflow as the slide solution and supplied a screenshot of ChatGPT's 12-slide preview. The new candidate captures readable full-slide previews for uploaded/generated cards. Attachment selection and original downloads remain. Verify the live 12-slide deck and uploaded deck separately; this phase is not complete.
 
-Candidate evidence: 37 unit tests and the complete isolated Edge suite passed. PDF/HTML ordering, type selection without recapture, original bytes, text decoding and malformed-package checks are covered. Live visual approval of inline reflow is still required.
+Previous checkpoint evidence: 37 unit tests and the isolated Edge suite passed for reflow and selection. That does not certify the new live-preview adapter. Record the new run in docs/STATUS.md; live visual approval is still required.
 
 **Build:** retrieve uploaded and generated files through visible ChatGPT file-viewer/download controls; integrate PDF/DOCX content and PPTX slide content at the correct conversation position.
 
-**Accept when:** actual bytes are verified for both uploaded and generated fixtures; all supported pages/slides retain order; unsupported visuals and inaccessible files have explicit warnings. State whether slides are reflowed content or faithful visual reproductions. Do not claim support for every file format or legacy `.doc`/`.ppt` files.
+**Accept when:** original files and complete static slide previews are verified for both uploaded and generated decks; all slides retain order and displayed layout at their conversation position; incomplete/unreadable viewers produce explicit errors. Reflowed text is not an acceptable substitute. Do not claim support for every file format or legacy `.doc`/`.ppt` files.
 
 ## 6. Capture reliability & caching
 

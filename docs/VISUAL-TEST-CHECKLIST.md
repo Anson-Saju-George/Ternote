@@ -1,6 +1,6 @@
 # Edge visual tests
 
-Current check: inline PPTX content and attachment selection. In normal Edge, open edge://extensions, reload Ternote (unpacked dist), refresh the ChatGPT tab and reopen the export view. Do not use the dedicated debug profile for this live check; it previously encountered human verification.
+Current check: complete ChatGPT slide previews and attachment selection, not PPTX reflow. In normal Edge, open edge://extensions, reload Ternote (unpacked dist), refresh the ChatGPT tab and reopen the export view. Do not use the dedicated debug profile for this live check; it previously encountered human verification.
 
 - Summary: ChatGPT logo/name, message count, link, exposed model identifier and effort or an explicit unavailable label.
 - Conversation: USER 1 / logo 1, USER 2 / logo 2; tinted rectangular boxes; readable tables/code with repeated headers.
@@ -27,7 +27,8 @@ Step 2: full-chat loading, attached content and polished direct PDF — ready fo
 
 - Check that each viewer resolves the correct filename and closes after retrieval; no unrelated controls should activate. Cancel during viewer loading and verify cleanup.
 - Uploaded/generated PDF and DOCX content should appear in conversation order, with explicit notes for inaccessible files. Confirm every page and embedded image against the original.
-- A retrieved PPTX should offer Save original. Compare it with ChatGPT's download. PDF/HTML should contain supported slide text, tables and embedded images between surrounding conversation blocks, in presentation slide order. Review reflow and unsupported-content notes; this is not a PowerPoint-perfect visual rendering.
+- A retrieved PPTX should offer Save original. Compare it with ChatGPT's download. PDF/HTML should contain complete slide-preview images between surrounding conversation blocks, in slide order, with original displayed graphics/layout. Check all 12 slides in the screenshot's generated deck, then the uploaded deck separately. Do not accept extracted/reflowed text or a single embedded image as a complete slide.
+- Cancel during slide navigation; check cleanup and that no partial deck is exported. Test a missing/stalled/protected preview: it must report failure, never silently substitute reflow. Already-open viewer state should be restored when possible. Slide pixels must be omitted under redaction.
 - Open Attachments: each detected file type has a checkbox; conversation images have their own toggle. Uncheck PPTX, preview again and confirm it disappears without recapture. Restore it and confirm its content returns. Combine with selected messages and PDF/DOCX/TXT files. Document-embedded images follow their parent document.
 - Enter a redaction term: original downloads must become disabled. Clear it: they should be available again.
 - Capture another conversation or close the export view: previous originals must not remain available. Missing, expired, ambiguous or unsupported files should report failure without substituting another file.

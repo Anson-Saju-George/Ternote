@@ -1,5 +1,11 @@
 # Sequential visual checkpoints
 
+## Current handoff — 2026-09-19: complete slide previews
+
+Supersedes the reflow plan below. User requires complete original-looking slides for uploaded and generated decks. The screenshot shows a 12-slide ChatGPT viewer with previous/next controls. New candidate src/slide-preview.js captures readable canvas/image surfaces through visible viewer navigation and transfers them through readCapturePreview. Reflow is no longer an export fallback. Missing/protected/layered or ambiguous previews fail explicitly; original download remains available.
+
+Next: reload the extension in normal Edge, refresh the chat and export. Compare slide count/order and all original graphics against the 12-slide generated deck, then separately test the uploaded deck. Do not certify live success from synthetic tests. If matching or pixel access fails, collect the displayed error and inspect the viewer DOM; do not substitute reflow or claim screenshot-visible content is automatically accessible. Readable slide size takes priority over forcing two slides onto every page; images stack where remaining space permits.
+
 ## Current handoff — inline attachments and type selection
 
 The owner confirmed native PPTX original downloading. New candidate: inline PPTX text/tables/raster images in slide order, common native text files, and an Attachments button with detected-type checkboxes plus a separate conversation-image toggle. Filtering composes with message selection and reuses captured data; it does not prevent retrieval. PPTX is reflowed, not a slide replica. No Excel or legacy Office conversion claim. Original files remain saveable, except under redaction.

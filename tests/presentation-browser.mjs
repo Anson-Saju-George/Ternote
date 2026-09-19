@@ -6,11 +6,13 @@ import {join} from 'node:path';
 export async function presentationTests({ui,evaluate,output}) {
   const base64=Buffer.from(await presentationFixture()).toString('base64');
   const result=await evaluate(ui,`(async()=>{
-    const {renderAsset,openPdf}=await import('../assets.js');
+    const {renderAsset,openPdf,rasterize}=await import('../assets.js');
+    const {presentationBlocks}=await import('../pptx.js');
     const {prepareConversation,htmlDocument}=await import('../exporters.js');
     const {createPdf}=await import('../pdf.js');
     const data=Uint8Array.from(atob('${base64}'),c=>c.charCodeAt(0)).buffer;
-    const deck=await renderAsset({id:'deck',name:'Fixture.pptx',kind:'pptx'},data);
+    // Parser regression only: reflow is no longer called by the product's export path.
+    const deck={id:'deck',name:'Fixture.pptx',kind:'pptx',status:'ready',...await presentationBlocks(data,{rasterize})};
     const c={title:'Inline presentation',platform:'chatgpt',messages:[{role:'user',blocks:[{type:'paragraph',text:'BEFORE DECK marker'},{type:'asset',assetId:'deck',name:deck.name},{type:'paragraph',text:'AFTER DECK marker'}]}],assets:[deck]};
     const prepared=prepareConversation(c),html=htmlDocument(prepared);
     const blob=await createPdf(prepared),task=await openPdf(await blob.arrayBuffer()),pdf=await task.promise;let text='',png;
@@ -37,6 +39,7 @@ export async function presentationTests({ui,evaluate,output}) {
   assert(!result.redacted.includes('FIRST'));assert(!result.redacted.includes('data:image/'));
   assert(!result.excluded.includes('FIRST SLIDE'));assert(Object.values(result.plain).every(Boolean));
   const unsafe=Buffer.from(await presentationFixture({unsafe:true})).toString('base64');
-  assert(await evaluate(ui,`(async()=>{try{const {renderAsset}=await import('../assets.js');await renderAsset({kind:'pptx'},Uint8Array.from(atob('${unsafe}'),c=>c.charCodeAt(0)).buffer);return false;}catch(e){return e.message.includes('declarations');}})()`));
-  console.log('PPTX slide order, embedded image/table, in-flow PDF/HTML, unsupported-content notes, redaction, type exclusion and inert text files passed.');
+  assert(await evaluate(ui,`(async()=>{try{const {presentationBlocks}=await import('../pptx.js');await presentationBlocks(Uint8Array.from(atob('${unsafe}'),c=>c.charCodeAt(0)).buffer,{});return false;}catch(e){return e.message.includes('declarations');}})()`));
+  assert(await evaluate(ui,"(async()=>{try{const {renderAsset}=await import('../assets.js');await renderAsset({kind:'pptx'},new ArrayBuffer(8));return false;}catch(e){return e.message.includes('Original slide previews are required');}})()"));
+  console.log('Legacy reflow parser regression and inert text files passed; product rejects reflow as a substitute for original slides.');
 }
