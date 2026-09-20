@@ -65,8 +65,8 @@ export async function captureConversation(config, options = {}) {
       return url.href;
     } catch {}
   }
-  function asset(root, kind, value, name) {
-    const url = value && safeUrl(value), key = url || root;
+  function asset(root, kind, value, name, stableKey) {
+    const url = value && safeUrl(value), key = stableKey || url || root;
     if (assetUrls.has(key)) return assetUrls.get(key);
     const id = 'asset-' + (assets.size + 1);
     assets.set(id, { id, kind, name: (name || (kind === 'image' ? 'Image' : 'Attachment')).slice(0,200), url, element: root });
@@ -103,8 +103,11 @@ export async function captureConversation(config, options = {}) {
         const name = (child.innerText || child.textContent || '').trim();
         const fileName = name.replace(/\s+/g,' ').match(/^(.+?\.(pdf|docx|pptx|txt|md|csv|json|html|svg|js|py|css|log|xml|yaml|yml|ts|sql))(?:$|\s+(?:Open file|Presentation|Document|PDF|Text|Spreadsheet|File|Code|JSON)(?:\s+file)?$)/i);
         if (options.nativeFiles && config.id==='chatgpt' && fileName && fileName[1].length<=200 && !child.querySelector('img') && child.closest('[data-message-author-role]')) {
-          flush(); const id=asset(child,fileName[2].toLowerCase(),null,fileName[1]);
-          assets.get(id).native=true;
+          const owner=child.closest('[data-message-author-role]'),ownerKey=identity(owner,owner.getAttribute('data-message-author-role'));
+          const matches=[...owner.querySelectorAll('button,[role="button"]')].filter(e=>(e.innerText||e.textContent||'').trim().startsWith(fileName[1]));
+          const slot=matches.indexOf(child);
+          flush(); const id=asset(child,fileName[2].toLowerCase(),null,fileName[1],'native:'+ownerKey+':'+fileName[1]+':'+slot);
+          Object.assign(assets.get(id),{native:true,element:child,ownerKey,slot,scrollTop:scroller?.scrollTop});
           output.push({type:'asset',assetId:id,name:fileName[1]});
         } else if (/\.(pdf|docx?|pptx?|xlsx?|odt|ods|odp|epub|zip|csv|txt|md)\b/i.test(name)) {
           const kind=name.match(/\.(pdf|docx?|pptx?|xlsx?|odt|ods|odp|epub|zip|csv|txt|md)\b/i)[1].toLowerCase();
@@ -148,14 +151,37 @@ export async function captureConversation(config, options = {}) {
       record.prev = tail; if (tail) tail.next = record; else head = record; tail = record;
     }
   }
-  async function fetchNewAssets() {
-    for (const a of assets.values()) {
+  async function locateNativeCard(a) {
+    const match=()=>{
+      for(const owner of messageElements()) {
+        if(identity(owner,owner.getAttribute('data-message-author-role'))!==a.ownerKey)continue;
+        const cards=[...owner.querySelectorAll('button,[role="button"]')].filter(e=>(e.innerText||e.textContent||'').trim().startsWith(a.name));
+        const found=cards[a.slot];if(found&&visible(found))return found;
+      }
+    };
+    let found=match();if(found)return found;
+    // Revisit unloaded cards without mutating the already-frozen conversation model.
+    progress('Locating a previously captured attachment');
+    scroller.scrollTop=a.scrollTop||0;await pause(pollMs);
+    found=match();if(found)return found;
+    scroller.scrollTop=0;const started=performance.now();
+    while(performance.now()-started<30000) {
+      await pause(pollMs);found=match();if(found)return found;
+      const previous=scroller.scrollTop;scroller.scrollTop+=Math.max(100,scroller.clientHeight*.7);
+      if(scroller.scrollTop===previous)break;
+    }
+    throw new Error('The original message attachment could not be located after history loading. No different file was substituted.');
+  }
+  async function fetchNewAssets(imagesOnly=false, orderedAssets=[...assets.values()]) {
+    for (const a of orderedAssets) {
+      if(imagesOnly&&a.kind!=='image')continue;
       if (a.attempted) continue;
       check(); a.attempted = true;
       progress('Reading images and attachments');
       try {
         if (rawBytes >= 256 * 1024 * 1024) throw new Error('Attachment memory budget reached (256 MB).');
         if(a.native) {
+          a.element=await locateNativeCard(a);
           progress('Opening the attachment viewer');
           a.marker=token+':'+a.id;a.element.setAttribute('data-ternote-file',a.marker);
           const result=await new Promise((resolve,reject)=>{
@@ -300,7 +326,8 @@ export async function captureConversation(config, options = {}) {
       if (!record) { record = { key, message: { id: key, role: 'artifact', blocks: content } }; records.set(key, record); insert(record, tail); version++; }
       if (record.signature !== signature) { record.message.blocks = content; record.signature = signature; version++; }
     }
-    await fetchNewAssets();
+    // Save transient image pixels before virtualization removes them. File viewers wait until order is frozen.
+    await fetchNewAssets(true);
     return elements;
   }
   async function pause(ms) {
@@ -359,16 +386,22 @@ export async function captureConversation(config, options = {}) {
     if ([...document.querySelectorAll('button')].some(b => /^(load|show) (older|earlier|previous|more) (messages|conversation|history)$/i.test(b.textContent.trim()) && b.getClientRects().length)) warnings.add('A load-history control remains. Open it and retry to include the earlier history.');
     for (let r = head; r; r = r.next) if (r.message.blocks.length) handle.messages.push(r.message);
     if (!handle.messages.length) throw new Error('No exportable message content was found.');
+    observer.disconnect();
+    const capturedTitle=document.title;
+    const orderedIds=[...new Set(handle.messages.flatMap(m=>m.blocks.filter(b=>b.type==='asset').map(b=>b.assetId)))];
+    const orderedAssets=orderedIds.map(id=>assets.get(id)).filter(Boolean);
+    progress('Messages loaded. Reading attachments in conversation order');
+    await fetchNewAssets(false,orderedAssets);check();
     const url = new URL(location.href);
     const models = [...new Set(handle.messages.map(m => m.model).filter(Boolean))];
     const efforts = [...new Set(handle.messages.map(m => m.effort).filter(Boolean))];
     const summary = {
-      schemaVersion: 2, title: document.title || 'Conversation', platform: config.id, sourceUrl: url.origin + url.pathname,
+      schemaVersion: 2, title: capturedTitle || 'Conversation', platform: config.id, sourceUrl: url.origin + url.pathname,
       exportedAt: new Date().toISOString(), completeness: 'page-boundaries-reached',
       ...(models.length ? { model: models.join(', '), modelSource: 'message metadata' } : {}),
       ...(efforts.length ? { effort: efforts.join(', ') } : {}),
       capture: { method: 'scroll-and-collect', messageCount: handle.messages.length, warnings: [...warnings], verification: 'Both visible scroll boundaries settled. The platform may still withhold history or attachments.' },
-      assets: [...assets.values()].map(({ id, kind, name, blob, error, previewPages, previewError }) => ({ id, kind, name, size: blob?.size || 0, mime: blob?.type || '', error,previewError,
+      assets: orderedAssets.map(({ id, kind, name, blob, error, previewPages, previewError }) => ({ id, kind, name, size: blob?.size || 0, mime: blob?.type || '', error,previewError,
         ...(previewPages?{previewPages:previewPages.map(p=>({width:p.width,height:p.height,size:p.blob.size}))}:{}) }))
     };
     handle.summary = summary;

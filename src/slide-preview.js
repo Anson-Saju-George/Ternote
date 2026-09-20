@@ -7,7 +7,21 @@ export async function captureSlidePreview(marker,name,token,assetId,expectedUrl,
   if(!card||!card.closest('[data-message-author-role]'))return {error:'The presentation card is no longer available.'};
   const normalized=value=>String(value||'').replace(/\s+/g,' ').trim();
   const stem=name.replace(/\.pptx$/i,'');
-  const visible=node=>!!node?.getClientRects().length && getComputedStyle(node).visibility!=='hidden';
+  const visible=node=>{
+    if(!node?.getClientRects().length)return false;
+    for(let e=node;e;e=e.parentElement){const s=getComputedStyle(e);if(e.hidden||e.getAttribute('aria-hidden')==='true'||s.display==='none'||s.visibility==='hidden'||Number(s.opacity)===0)return false;}
+    return true;
+  };
+  function visibleArea(e) {
+    const win=e.ownerDocument.defaultView,box=e.getBoundingClientRect();
+    let left=Math.max(0,box.left),top=Math.max(0,box.top),right=Math.min(win.innerWidth,box.right),bottom=Math.min(win.innerHeight,box.bottom);
+    for(let parent=e.parentElement;parent;parent=parent.parentElement) {
+      const style=getComputedStyle(parent),clip=parent.getBoundingClientRect();
+      if(/auto|scroll|hidden|clip/.test(style.overflowX)){left=Math.max(left,clip.left);right=Math.min(right,clip.right);}
+      if(/auto|scroll|hidden|clip/.test(style.overflowY)){top=Math.max(top,clip.top);bottom=Math.min(bottom,clip.bottom);}
+    }
+    return Math.max(0,right-left)*Math.max(0,bottom-top);
+  }
   const previousClose=new Set(document.querySelectorAll('button[aria-label="Close"]'));
   let root,close,originalIndex,position,completed=false,bytes=0;
   const pages=[],started=Date.now();
@@ -30,13 +44,19 @@ export async function captureSlidePreview(marker,name,token,assetId,expectedUrl,
     const roots=[root];
     for(let i=0;i<roots.length;i++) {
       if(i>20)throw new Error('Preview frame nesting is too complex.');
-      for(const frame of roots[i].querySelectorAll('iframe'))try{if(visible(frame)&&frame.contentDocument?.body)roots.push(frame.contentDocument.body);}catch{}
+      for(const frame of roots[i].querySelectorAll('iframe'))try{if(visible(frame)&&visibleArea(frame)>0&&frame.contentDocument?.body&&!roots.includes(frame.contentDocument.body))roots.push(frame.contentDocument.body);}catch{}
     }
-    const candidates=roots.flatMap(r=>[...r.querySelectorAll('canvas,img')]).filter(e=>visible(e)&&!e.closest('button,[role="button"]')).map(e=>({e,box:e.getBoundingClientRect()})).filter(({e,box})=>box.width>=300&&box.height>=150&&(e.tagName==='CANVAS'?e.width&&e.height:e.complete&&e.naturalWidth));
-    candidates.sort((a,b)=>b.box.width*b.box.height-a.box.width*a.box.height);
+    const candidates=roots.flatMap(r=>[...r.querySelectorAll('canvas,img')]).filter(e=>visible(e)&&!e.closest('button,[role="button"]')).map(e=>({e,box:e.getBoundingClientRect(),area:visibleArea(e)})).filter(({e,box,area})=>area>0&&box.width>=300&&box.height>=150&&(e.tagName==='CANVAS'?e.width&&e.height:e.complete&&e.naturalWidth));
+    candidates.sort((a,b)=>b.area-a.area);
     if(!candidates.length)throw new Error('No readable full-slide canvas or image found. The viewer may use a protected frame or HTML/SVG rendering.');
-    if(candidates[1]&&candidates[1].box.width*candidates[1].box.height>candidates[0].box.width*candidates[0].box.height*.9)throw new Error('Multiple overlapping slide surfaces found; refusing a potentially incomplete screenshot.');
     const chosen=candidates[0],owner=chosen.e.parentElement;
+    const sameBounds=c=>c.e.ownerDocument===chosen.e.ownerDocument&&['left','top','width','height'].every(k=>Math.abs(c.box[k]-chosen.box[k])<=2);
+    const layers=candidates.filter(sameBounds);
+    if(candidates.some(c=>c.area>chosen.area*.9&&!sameBounds(c)))throw new Error('More than one equally visible slide found. Keep a single slide active in the preview.');
+    if(layers.length>1) {
+      if(layers.some(c=>c.e.parentElement!==owner||getComputedStyle(c.e).mixBlendMode!=='normal'||getComputedStyle(c.e).filter!=='none'))throw new Error('The active slide has unsupported raster-layer composition.');
+      layers.sort((a,b)=>(Number.parseInt(getComputedStyle(a.e).zIndex)||0)-(Number.parseInt(getComputedStyle(b.e).zIndex)||0)||(a.e.compareDocumentPosition(b.e)&Node.DOCUMENT_POSITION_FOLLOWING?-1:1));
+    }
     // A canvas used only for a chart/background is not a whole slide if text is layered over it.
     for(const overlay of owner.querySelectorAll('span,p,h1,h2,h3,svg')) {
       if(overlay===chosen.e||!visible(overlay))continue;
@@ -44,14 +64,15 @@ export async function captureSlidePreview(marker,name,token,assetId,expectedUrl,
       if(style.opacity==='0'||style.color==='rgba(0, 0, 0, 0)'||style.color==='transparent')continue;
       if(box.width&&box.height&&box.left<chosen.box.right&&box.right>chosen.box.left&&box.top<chosen.box.bottom&&box.bottom>chosen.box.top&&(overlay.tagName.toLowerCase()==='svg'||normalized(overlay.textContent)))throw new Error('The slide has separate visible text/vector layers. A canvas-only capture would be incomplete.');
     }
-    return candidates[0].e;
+    return layers.map(c=>c.e);
   }
   function snapshot(){
-    const source=surface(),width=source.tagName==='CANVAS'?source.width:source.naturalWidth,height=source.tagName==='CANVAS'?source.height:source.naturalHeight;
+    const sources=surface(),source=sources[0],width=source.tagName==='CANVAS'?source.width:source.naturalWidth,height=source.tagName==='CANVAS'?source.height:source.naturalHeight;
     if(width*height>80_000_000)throw new Error('Slide dimensions exceed the image safety budget.');
     const scale=Math.min(1,2200/Math.max(width,height)),canvas=document.createElement('canvas');
     canvas.width=Math.max(1,Math.round(width*scale));canvas.height=Math.max(1,Math.round(height*scale));
-    try {const context=canvas.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(source,0,0,canvas.width,canvas.height);
+    try {const context=canvas.getContext('2d');context.fillStyle='#fff';context.fillRect(0,0,canvas.width,canvas.height);
+      for(const layer of sources){context.globalAlpha=Number(getComputedStyle(layer).opacity);context.drawImage(layer,0,0,canvas.width,canvas.height);}
       return {data:canvas.toDataURL('image/png'),width:canvas.width,height:canvas.height};
     }catch{throw new Error('The browser prevents reading this slide image. No reconstructed slide was substituted.');}
     finally{canvas.width=canvas.height=0;}

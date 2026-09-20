@@ -6,6 +6,8 @@ Chat and document processing happen in the browser. There is no backend, account
 
 On your export request, it scrolls the enabled chat, reads exposed message content, and expands recognized read-only content/history controls. This may cause the chat website to load its own history. It restores the scroll position and recognized expanded controls when finished.
 
+Message order is fixed before native attachment viewers are opened. Images that could disappear during scrolling are retained while mounted. The extension may revisit an original message to retrieve its file card after history loading. Assets are assembled at their recorded conversation positions before PDF generation; no additional upload or permanent archive is introduced.
+
 For attachments, it snapshots already-loaded images where permitted, or fetches resource URLs already exposed by the conversation DOM. Same-origin requests use the browser's ordinary same-origin session; cross-origin requests omit credentials and remain subject to CORS. Requests use no referrer and reject redirects. Resource URLs are held in memory, not written into the exported document. No broad extra host permissions are requested. Unavailable resources are reported.
 
 Source conversation URLs omit query strings and fragments. Metadata can be disabled. Exact-text redaction changes only the exported copy. Because pixel content cannot be safely text-redacted, enabling redaction omits images and attached PDF pages; it does not run OCR.

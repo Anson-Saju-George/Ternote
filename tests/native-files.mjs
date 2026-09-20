@@ -39,10 +39,19 @@ export async function nativeFileTests({evaluate,page,send,sleep,fixtureSessions,
   const pptx=Buffer.from(await presentationFixture()).toString('base64');
   await evaluate(session,`const textCard=document.createElement('button');textCard.id='textFile';textCard.textContent='notes.txt';document.querySelector('[data-message-author-role="assistant"]').append(textCard);
     setup('uploaded');setup('generated');setup('textFile');window.fetch=async url=>new Response(String(url).endsWith('notes.txt')?'Daily notes fixture':Uint8Array.from(atob('${pptx}'),c=>c.charCodeAt(0)),{headers:{'content-type':'application/octet-stream'}});
-    window.chrome={runtime:{sendMessage:async m=>m.type==='native-file-request'?resolveNative(m.marker,m.name,m.url):undefined},storage:{onChanged:{addListener(){},removeListener(){}}}};`);
+    window.fileRequestOrder=[];window.captureCountsAtFileOpen=[];
+    window.chrome={runtime:{sendMessage:async m=>{
+      if(m.type!=='native-file-request')return;
+      window.fileRequestOrder.push(m.name);window.captureCountsAtFileOpen.push(__personalExportCapture.messages.length);
+      if(fileRequestOrder.length===1){const extra=document.createElement('article');extra.setAttribute('data-message-author-role','assistant');extra.textContent='Viewer-induced mutation must not reorder frozen content';document.querySelector('main').append(extra);}
+      return resolveNative(m.marker,m.name,m.url);
+    }},storage:{onChanged:{addListener(){},removeListener(){}}}};`);
   const captured=await evaluate(session,'('+captureConversation.toString()+')('+JSON.stringify(PLATFORMS[0])+','+JSON.stringify({token:'native-pipeline',stream:true,nativeFiles:true,testTiming:{pollMs:60,edgeWait:160}})+')');
   assert.equal(captured.assets.length,3);assert(captured.assets.every(a=>!a.error&&a.size>0));
   assert.deepEqual(captured.assets.map(a=>a.kind),['docx','pptx','txt']);
+  assert.deepEqual(await evaluate(session,'fileRequestOrder'),['uploaded.docx','generated.pptx','notes.txt']);
+  assert.deepEqual(await evaluate(session,'captureCountsAtFileOpen'),[2,2,2],'All messages must be frozen before opening any native attachment.');
+  assert.equal(captured.capture.messageCount,2);
   assert(!JSON.stringify(captured).includes('/files/'),'Signed/native URLs must not enter exported metadata.');
   const part=await evaluate(session,'('+readCaptureAsset.toString()+')('+JSON.stringify('native-pipeline')+','+JSON.stringify(captured.assets[1].id)+',0)');
   assert.equal(part.base64,pptx);assert(part.done);

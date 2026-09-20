@@ -8,6 +8,8 @@ The user approved the UI, PDF identity and compact attachment-layout checkpoint 
 
 ## Run
 
+Capture-order update (2026-09-20): messages and attachment anchors are collected first and frozen in conversation order before opening native file viewers. Transient images are saved while mounted to avoid loss under virtualization. Pending files are then retrieved in first-reference order; only afterward does the UI render assets and create the PDF. Native cards are matched to their original message identity and occurrence, with bounded scroll revisiting when unloaded. The preview detector excludes clipped/offscreen/hidden canvases and supports aligned same-parent raster layers; actual live viewer coverage remains under review.
+
 Requires Node.js 24 or newer.
 
     npm ci --ignore-scripts

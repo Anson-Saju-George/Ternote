@@ -1,5 +1,11 @@
 # Sequential visual checkpoints
 
+## Current handoff — 2026-09-20: visible slides and capture-first ordering
+
+The live viewer hit the overly broad overlapping-surfaces check. New selection uses viewport/ancestor clipping and hidden/opacity state, then visible area; equal-sized offscreen canvases are not conflicts. Aligned same-parent raster layers can be composited. Separate visible slides or unsupported layer blends remain explicit errors, not guesses.
+
+Message collection now finishes before native file viewers open. Ordered blocks and their asset IDs are frozen; transient images are preserved while mounted; remaining assets are acquired in message order, then the UI renders assets and finally builds the PDF. Revisiting a virtualized card does not modify the frozen message model. Next: open normal Edge after validation, reload/refresh, retest both decks and normal images. Compare the entire message sequence and attachment positions, not just the seven-message notice. Do not certify server-complete history or live slide success without visual confirmation. Older handoffs below are historical.
+
 ## Current handoff — 2026-09-19: complete slide previews
 
 Supersedes the reflow plan below. User requires complete original-looking slides for uploaded and generated decks. The screenshot shows a 12-slide ChatGPT viewer with previous/next controls. New candidate src/slide-preview.js captures readable canvas/image surfaces through visible viewer navigation and transfers them through readCapturePreview. Reflow is no longer an export fallback. Missing/protected/layered or ambiguous previews fail explicitly; original download remains available.

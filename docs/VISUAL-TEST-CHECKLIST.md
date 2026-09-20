@@ -25,6 +25,9 @@ Step 2: full-chat loading, attached content and polished direct PDF — ready fo
 
 ## Native-file checkpoint
 
+- Confirm the progress sequence: message loading completes, attachments are read, then the PDF is formatted. Earlier/later messages and file positions must not change when viewers open. Test identical filenames attached to different messages and a chat that unloads older message DOMs.
+- Retest the reported overlapping-surface failure. Offscreen/hidden preview canvases must not block the active slide. Verify that all visible raster layers are included, and that actual ambiguous side-by-side slides fail rather than silently choosing one.
+
 - Check that each viewer resolves the correct filename and closes after retrieval; no unrelated controls should activate. Cancel during viewer loading and verify cleanup.
 - Uploaded/generated PDF and DOCX content should appear in conversation order, with explicit notes for inaccessible files. Confirm every page and embedded image against the original.
 - A retrieved PPTX should offer Save original. Compare it with ChatGPT's download. PDF/HTML should contain complete slide-preview images between surrounding conversation blocks, in slide order, with original displayed graphics/layout. Check all 12 slides in the screenshot's generated deck, then the uploaded deck separately. Do not accept extracted/reflowed text or a single embedded image as a complete slide.
