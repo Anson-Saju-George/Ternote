@@ -53,7 +53,7 @@ function initializeAttachments() {
   const types=detectedAttachmentTypes(conversation?.assets).filter(([type])=>type!=='image');
   for(const [type,count] of types) {
     const label=document.createElement('label'), input=document.createElement('input');label.className='check';
-    input.type='checkbox';input.value=type;input.checked=true;label.append(input,document.createTextNode(type.toUpperCase()+' ('+count+')'));
+    input.type='checkbox';input.value=type;input.checked=type!=='html';label.append(input,document.createTextNode(type.toUpperCase()+' ('+count+')'+(type==='html'?' · include readable content':'')));
     $('attachmentTypes').append(label);
   }
   if(!types.length)$('attachmentTypes').textContent='No other attachment types detected.';
@@ -279,11 +279,11 @@ async function renderPlatforms() {
   }
 }
 api?.runtime.onMessage.addListener((message, sender, reply) => {
-  if(busy&&sender.id===api.runtime.id&&sender.tab?.id===tab?.id&&sender.frameId===0&&message.type==='native-slide-request'&&message.token===captureToken&&message.url===tab.url&&platform?.id==='chatgpt'&&typeof message.assetId==='string'&&message.marker===captureToken+':'+message.assetId&&typeof message.name==='string'&&message.name.length<=200) {
+  if(busy&&sender.id===api.runtime.id&&sender.tab?.id===tab?.id&&sender.frameId===0&&message.type==='native-slide-request'&&message.token===captureToken&&message.url===tab.url&&['chatgpt','claude'].includes(platform?.id)&&typeof message.assetId==='string'&&message.marker===captureToken+':'+message.assetId&&typeof message.name==='string'&&message.name.length<=200) {
     api.scripting.executeScript({target:{tabId:tab.id},func:captureSlidePreview,args:[message.marker,message.name,message.token,message.assetId,message.url,message.budget]})
       .then(result=>reply(result[0]?.result||{error:'No slide preview result.'}),()=>reply({error:'Unable to access the slide preview.'}));return true;
   }
-  if (busy && sender.id===api.runtime.id && sender.tab?.id===tab?.id && sender.frameId===0 && message.type==='native-file-request' && message.token===captureToken && message.url===tab.url && platform?.id==='chatgpt' && typeof message.marker==='string' && message.marker.startsWith(captureToken+':asset-') && typeof message.name==='string' && message.name.length<=200) {
+  if (busy && sender.id===api.runtime.id && sender.tab?.id===tab?.id && sender.frameId===0 && message.type==='native-file-request' && message.token===captureToken && message.url===tab.url && ['chatgpt','claude'].includes(platform?.id) && typeof message.marker==='string' && message.marker.startsWith(captureToken+':asset-') && typeof message.name==='string' && message.name.length<=200) {
     api.scripting.executeScript({target:{tabId:tab.id},world:'MAIN',func:resolveNativeFile,args:[message.marker,message.name,message.url]})
       .then(result=>reply(result[0]?.result||{error:'No file viewer result.'}),()=>reply({error:'Unable to access the native file viewer.'}));
     return true;

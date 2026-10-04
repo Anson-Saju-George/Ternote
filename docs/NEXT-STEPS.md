@@ -1,5 +1,9 @@
 # Sequential visual checkpoints
 
+## Next live gate — Claude attachments
+
+Reload Ternote and refresh Claude. Retest the reported long conversation: confirm actual first/last messages, order and duplicates; ordinary website/GitHub references should not produce file-fetch warnings. Test uploaded AND generated PDF, DOCX, PPTX and Markdown separately. Verify original slide previews, counts and in-flow placement; no reflow fallback. Test HTML unchecked (filename only) and checked (inert readable content). The shared adapter uses guarded visible controls, but Claude's real viewer DOM and download origins have not been observed. Request a test chat and sanitized viewer structure if matching fails; do not broaden host permissions, guess private endpoints or claim parity from synthetic fixtures. Stable-ID/history warnings must not be hidden if unresolved.
+
 ## Current handoff — 2026-09-20: visible slides and capture-first ordering
 
 The live viewer hit the overly broad overlapping-surfaces check. New selection uses viewport/ancestor clipping and hidden/opacity state, then visible area; equal-sized offscreen canvases are not conflicts. Aligned same-parent raster layers can be composited. Separate visible slides or unsupported layer blends remain explicit errors, not guesses.

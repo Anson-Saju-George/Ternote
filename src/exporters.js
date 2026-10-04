@@ -14,7 +14,8 @@ export function csvCell(value){
 export function prepareConversation(c,{range='all',selected=[],metadata=true,redact='',attachmentTypes=null,includeImages=true}={}){
   const byId=new Map((c.assets||[]).map(asset=>[asset.id,asset]));
   const messages=numberedMessages(c.messages).filter((m,i)=>range==='selected'?selected.includes(i):['user','assistant'].includes(range)?m.role===range:true)
-    .map(m=>({...m,blocks:m.blocks.filter(b=>{
+    .map(m=>({...m,blocks:m.blocks.map(b=>b.type==='asset'&&attachmentType(byId.get(b.assetId)||{})==='html'&&attachmentTypes!==null&&!attachmentTypes.includes('html')
+      ?{type:'attachment-note',text:'HTML attachment: '+(b.name||byId.get(b.assetId)?.name||'Attachment')+' (content not selected)'}:b).filter(b=>{
       if(b.type==='image')return includeImages;
       if(b.type!=='asset')return true;
       const type=attachmentType(byId.get(b.assetId)||{kind:'other'});

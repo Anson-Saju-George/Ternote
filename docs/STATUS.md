@@ -1,5 +1,15 @@
 # Development status
 
+## Claude attachment candidate — 2026-10-04
+
+Verification: 38 unit tests, syntax/permission checks, build and the complete isolated Edge regression suite passed. Build size: 13,230,987 bytes. No new permissions or dependencies. Tests do not establish real Claude viewer compatibility.
+
+Reference links are no longer treated as files merely because their URL ends in a supported extension. Explicit downloads, attachment markers and filename labels identify candidates; GitHub blob/tree pages remain references. Markdown attachment bytes are preserved as readable source. HTML has an unchecked type checkbox; opting out keeps a filename note at the original position, opting in uses inert readable-content extraction (not a browser screenshot, no scripts or remote images).
+
+The guarded native file and slide-preview adapters now accept Claude as well as ChatGPT, using message ownership and exact filename checks. Same-origin HTTPS and blob download URLs are supported; no additional permissions or remote conversion. This is candidate shared capability, NOT verified Claude feature parity: actual viewer selectors, uploaded/generated file access, original slide pixels, full history and ordering still require live validation. Unknown/protected previews and cross-origin native download URLs still fail explicitly. Markdown is preserved verbatim, not fully typeset Markdown.
+
+Message UUID attributes are recognized. History controls are scoped to the conversation main area, recognize aria labels and exclude navigation/sidebars. Containers without stable identities still produce an honest warning; the owner's 262-message conversation has not been verified fixed. Added two-platform browser fixtures for references vs attachments, Markdown upload/generated links, scoped history, filename-matched file downloads and inert HTML, plus HTML selection unit coverage. The newest checkpoint supersedes older notes about HTML always being printed as source.
+
 Current fix — 2026-09-20: owner reported the live "Multiple overlapping slide surfaces" rejection. The previous detector compared rendered sizes without checking viewport visibility or geometric overlap. Candidate fix excludes clipped/offscreen/hidden surfaces, ranks by visible area, and composites same-parent, coextensive raster layers in z-order/DOM order where blending is supported. Equally visible separate slides and unsupported compositions still fail explicitly. Live confirmation remains pending; this explains a concrete code defect, not a verified reconstruction of the live viewer DOM.
 
 Capture is now staged: collect all accessible messages and preserve transient image bytes; freeze top-to-bottom message/attachment anchors; read file attachments in first-reference order; then return the complete model for PDF/HTML generation. Native viewers no longer open during message collection. Virtualized native cards use original message identity and card position, with bounded revisiting rather than filename-only matching. Final PDF creation already waited for ensureConversation; that barrier is retained.

@@ -46,7 +46,7 @@ Native PPTX original downloading has been confirmed by the owner in ChatGPT. Com
 | Platform | Current status |
 | :--- | :--- |
 | **ChatGPT** | Primary development and manual-testing focus; UI, image export and current PDF layout approved by the project owner. Native attachment support remains incomplete. |
-| **Claude** | Initial adapter and synthetic tests exist; broader live-site validation is pending. |
+| **Claude** | Conversation capture and candidate attachment/viewer support have synthetic coverage; live uploaded/generated-file and full-history validation is pending. |
 | **Gemini** | Initial adapter and synthetic tests exist; broader live-site validation is pending. |
 
 AI websites change. These statuses describe development progress, not a guarantee that every conversation or platform feature is supported.

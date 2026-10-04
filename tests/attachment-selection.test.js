@@ -19,6 +19,14 @@ test('empty type selection removes documents but leaves images independently sel
   assert(!prepareConversation(conversation,{range:'selected',selected:[1]}).assets);
   assert.equal(prepareConversation(conversation).assets.length,4);
 });
+test('HTML opt-out preserves the attachment position and opt-in includes its content',()=>{
+  const c={messages:[{role:'user',blocks:[{type:'paragraph',text:'before'},{type:'asset',assetId:'h',name:'page.html'},{type:'paragraph',text:'after'}]}],assets:[{id:'h',kind:'artifact',sourceKind:'html',name:'page.html',blocks:[{type:'paragraph',text:'HTML body'}]}]};
+  const excluded=prepareConversation(c,{attachmentTypes:[]});
+  assert.equal(excluded.messages[0].blocks[1].type,'attachment-note');
+  assert.match(excluded.messages[0].blocks[1].text,/page.html/);
+  assert(!excluded.assets);
+  assert.equal(prepareConversation(c,{attachmentTypes:['html']}).assets[0].blocks[0].text,'HTML body');
+});
 test('PPTX text is redacted and embedded pixels are omitted independently of image selection',()=>{
   const source={messages:[{role:'user',blocks:[{type:'asset',assetId:'deck'}]}],assets:[{id:'deck',kind:'pptx',status:'ready',blocks:[{type:'paragraph',text:'private text'},{type:'image',data:'data:image/png;base64,AAAA',preventUpscale:true}]}]};
   const cleaned=prepareConversation(source,{redact:'private',includeImages:false});

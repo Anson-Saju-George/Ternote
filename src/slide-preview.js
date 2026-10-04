@@ -1,10 +1,10 @@
 // Injected in the page's ISOLATED world. Only visible, filename-matched viewer controls.
 export async function captureSlidePreview(marker,name,token,assetId,expectedUrl,maxBytes=64*1024*1024) {
   const job=globalThis.__personalExportCapture, asset=job?.assets?.get(assetId);
-  if(location.origin!=='https://chatgpt.com'||location.href!==expectedUrl||job?.token!==token||!asset)return {error:'The slide capture session expired.'};
+  if(!['https://chatgpt.com','https://claude.ai'].includes(location.origin)||location.href!==expectedUrl||job?.token!==token||!asset)return {error:'The slide capture session expired.'};
   if(!Number.isFinite(maxBytes)||maxBytes<=0||maxBytes>64*1024*1024)return {error:'Slide preview memory budget unavailable.'};
   const card=[...document.querySelectorAll('[data-ternote-file]')].find(e=>e.getAttribute('data-ternote-file')===marker);
-  if(!card||!card.closest('[data-message-author-role]'))return {error:'The presentation card is no longer available.'};
+  if(!card||!card.closest('[data-message-author-role],[data-testid="user-message"],[data-testid="assistant-message"]'))return {error:'The presentation card is no longer available.'};
   const normalized=value=>String(value||'').replace(/\s+/g,' ').trim();
   const stem=name.replace(/\.pptx$/i,'');
   const visible=node=>{
@@ -90,7 +90,7 @@ export async function captureSlidePreview(marker,name,token,assetId,expectedUrl,
       check();
       const candidates=[];
       for(const next of button(document,'Go to next slide'))for(let node=next.parentElement,depth=0;node&&node!==document.body&&depth<10;node=node.parentElement,depth++) {
-        if(node.querySelector('[data-message-author-role]'))break;
+        if(node.querySelector('[data-message-author-role],[data-testid="user-message"],[data-testid="assistant-message"]'))break;
         const titles=[...node.querySelectorAll('h1,h2,h3,[title],span,p,div')];
         if(titles.some(e=>[name,stem].includes(normalized(e.getAttribute('title')||e.textContent)))&&button(node,'Go to previous slide').length===1&&node.querySelector('canvas,img,iframe')){candidates.push(node);break;}
       }

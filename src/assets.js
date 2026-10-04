@@ -18,6 +18,7 @@ export async function rasterize(blob, signal) {
 // The parser's HTML is never inserted into a live document. Rebuild a tiny inert data model.
 export async function documentBlocks(html, signal) {
   const template = document.createElement('template'); template.innerHTML = html;
+  template.content.querySelectorAll('script,style,iframe,object,embed,svg,form,input,button,link,meta,base').forEach(n=>n.remove());
   const result = [];
   async function walk(root, depth = 0) {
     if (depth > 80) throw new Error('Document nesting is too deep to render safely.');
@@ -105,7 +106,8 @@ export async function renderAsset(meta, buffer, { signal, onProgress = () => {} 
     const encoding=bytes[0]===0xff&&bytes[1]===0xfe?'utf-16le':bytes[0]===0xfe&&bytes[1]===0xff?'utf-16be':'utf-8';
     const text=new TextDecoder(encoding,{fatal:true}).decode(buffer);
     if(text.includes('\0'))throw new Error('The attachment contains binary data, not supported text.');
-    // HTML, SVG and executable artifacts are printed as source, never run.
+    if(meta.kind==='html')return { ...meta, status:'ready', kind:'artifact', sourceKind:'html', blocks:await documentBlocks(text,signal) };
+    // Markdown is preserved verbatim; SVG and executable artifacts are printed as source, never run.
     return { ...meta, status: 'ready', kind: 'artifact', sourceKind: meta.kind, blocks: [{ type: 'code', language: meta.kind, text }] };
   }
   throw new Error('This attachment format is not yet supported.');

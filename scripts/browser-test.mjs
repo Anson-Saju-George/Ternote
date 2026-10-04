@@ -9,6 +9,7 @@ import {advancedTests} from '../tests/browser-scenarios.mjs';
 import {nativeFileTests} from '../tests/native-files.mjs';
 import {presentationTests} from '../tests/presentation-browser.mjs';
 import {slidePreviewTests} from '../tests/slide-preview.mjs';
+import {claudeAttachmentTests} from '../tests/claude-attachments.mjs';
 const root=resolve(import.meta.dirname,'..'),output=join(root,'test-output');
 await mkdir(output,{recursive:true});
 const candidates=[process.env.BROWSER_PATH,'C:/Program Files/BraveSoftware/Brave-Browser/Application/brave.exe','C:/Program Files/Google/Chrome/Application/chrome.exe','/usr/bin/chromium'].filter(Boolean);
@@ -105,6 +106,7 @@ try{
     console.log('Synthetic DOM capture passed: '+p.name);
   }
   await nativeFileTests({ui,evaluate,page,send,sleep,fixtureSessions});
+  await claudeAttachmentTests({ui,evaluate,page,send,sleep,fixtureSessions});
   await slidePreviewTests({ui,evaluate,page,send,sleep,fixtureSessions});
   await presentationTests({ui,evaluate,output});
   await advancedTests({ui,evaluate,page,send,sleep,fixtureSessions,output});

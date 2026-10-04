@@ -75,14 +75,17 @@ export async function captureConversation(config, options = {}) {
   }
   function resourceBlock(el) {
     if (el.tagName === 'IMG') {
-      if (/avatar|profile picture/i.test(el.alt || '')) return null;
+      if (/avatar|profile picture|\bicon\b/i.test(el.alt || '') || el.getAttribute('aria-hidden')==='true') return null;
       return { type: 'asset', assetId: asset(el, 'image', el.currentSrc || el.src || el.dataset.src, el.alt), name: el.alt || 'Image' };
     }
     if (el.tagName === 'A') {
       const label = el.getAttribute('download') || plain(el) || 'Attachment';
       const url = el.getAttribute('href') || '';
       const ext = (label.match(/\.(pdf|docx|pptx|txt|md|csv|json|html|svg|js|py|css|log|xml|yaml|yml|ts|sql)\b/i) || url.split(/[?#]/)[0].match(/\.(pdf|docx|pptx|txt|md|csv|json|html|svg|js|py|css|log|xml|yaml|yml|ts|sql)$/i))?.[1]?.toLowerCase();
-      if (ext || el.hasAttribute('download')) {
+      // A source URL ending in .md/.html is not evidence of an attached file.
+      const fileLabel=/^[^/\\\n]{1,200}\.(pdf|docx|pptx|txt|md|csv|json|html|svg|js|py|css|log|xml|yaml|yml|ts|sql)$/i.test(label.trim());
+      const attachment=el.hasAttribute('download') || !!el.closest('[data-testid="file-attachment"],[data-testid="attachment"],[data-attachment-id]') || (fileLabel && !/^https?:/i.test(label));
+      if ((ext || el.hasAttribute('download')) && attachment && !/github\.com\/[^/]+\/[^/]+\/(blob|tree)\//i.test(url)) {
         return { type: 'asset', assetId: asset(el, ext || 'unknown', url, label), name: label };
       }
     }
@@ -102,8 +105,9 @@ export async function captureConversation(config, options = {}) {
         for (const img of child.querySelectorAll('img')) if (visible(img)) { flush(); const b = resourceBlock(img); if (b) output.push(b); }
         const name = (child.innerText || child.textContent || '').trim();
         const fileName = name.replace(/\s+/g,' ').match(/^(.+?\.(pdf|docx|pptx|txt|md|csv|json|html|svg|js|py|css|log|xml|yaml|yml|ts|sql))(?:$|\s+(?:Open file|Presentation|Document|PDF|Text|Spreadsheet|File|Code|JSON)(?:\s+file)?$)/i);
-        if (options.nativeFiles && config.id==='chatgpt' && fileName && fileName[1].length<=200 && !child.querySelector('img') && child.closest('[data-message-author-role]')) {
-          const owner=child.closest('[data-message-author-role]'),ownerKey=identity(owner,owner.getAttribute('data-message-author-role'));
+        const owner=child.closest(config.selectors.join(','));
+        if (options.nativeFiles && ['chatgpt','claude'].includes(config.id) && fileName && fileName[1].length<=200 && owner) {
+          const ownerKey=identity(owner,config.user.some(s=>owner.matches(s))?'user':'assistant');
           const matches=[...owner.querySelectorAll('button,[role="button"]')].filter(e=>(e.innerText||e.textContent||'').trim().startsWith(fileName[1]));
           const slot=matches.indexOf(child);
           flush(); const id=asset(child,fileName[2].toLowerCase(),null,fileName[1],'native:'+ownerKey+':'+fileName[1]+':'+slot);
@@ -117,6 +121,7 @@ export async function captureConversation(config, options = {}) {
           warnings.add('File cards were found without readable URLs. Their contents are not included in this export yet.');
         }
       }
+      else if (tag === 'A') { const href=safeUrl(child.getAttribute('href')); const label=plain(child); pending+=label+(href&&href!==label?' ('+href+')':''); }
       else if (tag === 'PRE') { flush(); const code = child.querySelector('code') || child; output.push({ type: 'code', text: plain(code), language: code.className?.match?.(/language-([\w+-]+)/)?.[1] || '' }); }
       else if (/^H[1-6]$/.test(tag)) { flush(); output.push({ type: 'heading', level: Number(tag[1]), text: plain(child) }); }
       else if (tag === 'TABLE') { flush(); output.push({ type: 'table', rows: [...child.rows].filter(visible).map(r => [...r.cells].map(plain)) }); for (const img of child.querySelectorAll('img')) if (visible(img)) { const b = resourceBlock(img); if(b)output.push(b); } }
@@ -130,9 +135,9 @@ export async function captureConversation(config, options = {}) {
   }
   function identity(el, role) {
     for (let n = el; n && n !== document.body; n = n.parentElement) {
-      for (const attr of ['data-message-id','data-turn-id','id']) {
+      for (const attr of ['data-message-id','data-turn-id','data-message-uuid','data-uuid','id']) {
         const value = n.getAttribute(attr);
-        if (value && (n === el || n.matches('article,[data-message-id],[data-turn-id]'))) return 'stable:' + attr + ':' + value + ':' + role;
+        if (value && (n === el || n.matches('article,[data-message-id],[data-turn-id],[data-message-uuid],[data-uuid]'))) return 'stable:' + attr + ':' + value + ':' + role;
       }
     }
     if (!identities.has(el)) identities.set(el, 'node:' + (++sequence));
@@ -154,7 +159,7 @@ export async function captureConversation(config, options = {}) {
   async function locateNativeCard(a) {
     const match=()=>{
       for(const owner of messageElements()) {
-        if(identity(owner,owner.getAttribute('data-message-author-role'))!==a.ownerKey)continue;
+        if(identity(owner,config.user.some(s=>owner.matches(s))?'user':'assistant')!==a.ownerKey)continue;
         const cards=[...owner.querySelectorAll('button,[role="button"]')].filter(e=>(e.innerText||e.textContent||'').trim().startsWith(a.name));
         const found=cards[a.slot];if(found&&visible(found))return found;
       }
@@ -194,7 +199,7 @@ export async function captureConversation(config, options = {}) {
           check();
           if(!result?.url)throw new Error(result?.error||'The native file is unavailable.');
           const url=new URL(result.url);
-          if(url.origin!==location.origin || url.protocol!=='https:' || url.username || url.password)throw new Error('The native download URL is not supported.');
+          if(url.origin!==location.origin || !['https:','blob:'].includes(url.protocol) || url.username || url.password)throw new Error('The native download URL is not supported.');
           a.url=url.href;
         }
         // Snapshot already loaded, origin-clean images before a virtualized page removes them.
@@ -337,6 +342,10 @@ export async function captureConversation(config, options = {}) {
   let scroller, observer, oldTop, oldBehavior;
   const pollMs = options.testTiming?.pollMs ?? 300;
   const edgeWait = options.testTiming?.edgeWait ?? 1800;
+  function historyControls() {
+    const region=messageElements()[0]?.closest('main') || scroller;
+    return [...region.querySelectorAll('button,[role="button"]')].filter(b=>!b.closest('nav,aside') && visible(b) && b.getClientRects().length && /^(load|show) (older|earlier|previous|more) (messages|conversation|history)$/i.test((b.getAttribute('aria-label')||b.textContent).trim()));
+  }
   try {
     let elements = messageElements();
     if (!elements.length) throw new Error('No supported message structure found. The site adapter may need an update.');
@@ -362,8 +371,7 @@ export async function captureConversation(config, options = {}) {
         const nextTop = direction < 0 ? Math.max(0, before - Math.max(100, scroller.clientHeight * .7)) : Math.min(max, before + Math.max(100, scroller.clientHeight * .7));
         scroller.scrollTop = nextTop;
         if(direction < 0 && nextTop === 0){
-          const region=scroller===document.scrollingElement?document.querySelector('main')||document.body:scroller;
-          const more=[...region.querySelectorAll('button')].find(b=>!b.disabled&&b.getClientRects().length&&/^(load|show) (older|earlier|previous|more) (messages|conversation|history)$/i.test(b.textContent.trim()));
+          const more=historyControls().find(b=>!b.disabled&&b.getAttribute('aria-disabled')!=='true');
           if(more&&historyClicks.get(more)!==version){historyClicks.set(more,version);more.click();settledSince=undefined;}
         }
         // Boundary events allow lazy-load handlers to run even when already at the edge.
@@ -383,7 +391,7 @@ export async function captureConversation(config, options = {}) {
     check();
     const elementsNow = messageElements();
     if (elementsNow.some(el => expansionControls(el).length)) warnings.add('A recognized message-expansion control did not open. Hidden content behind that control may be missing.');
-    if ([...document.querySelectorAll('button')].some(b => /^(load|show) (older|earlier|previous|more) (messages|conversation|history)$/i.test(b.textContent.trim()) && b.getClientRects().length)) warnings.add('A load-history control remains. Open it and retry to include the earlier history.');
+    if (historyControls().length) warnings.add('A load-history control remains. Open it and retry to include the earlier history.');
     for (let r = head; r; r = r.next) if (r.message.blocks.length) handle.messages.push(r.message);
     if (!handle.messages.length) throw new Error('No exportable message content was found.');
     observer.disconnect();

@@ -12,7 +12,7 @@ For attachments, it snapshots already-loaded images where permitted, or fetches 
 
 Source conversation URLs omit query strings and fragments. Metadata can be disabled. Exact-text redaction changes only the exported copy. Because pixel content cannot be safely text-redacted, enabling redaction omits images and attached PDF pages; it does not run OCR.
 
-On ChatGPT, capture may open a recognized attachment card and activate its visible Download control. During that action, a temporary page adapter observes window.open and programmatic link clicks to obtain a same-origin HTTPS file URL. It restores those methods afterward or on timeout/cancellation and closes a newly opened viewer when identified. It does not inspect private application state or tokens. Unsupported viewers produce an explicit failure note.
+On ChatGPT or Claude, capture may open a recognized attachment card and activate its visible Download control. During that action, a temporary page adapter observes window.open and programmatic link clicks to obtain a same-origin HTTPS or blob file URL. It restores those methods afterward or on timeout/cancellation and closes a newly opened viewer when identified. It does not inspect private application state or tokens. Unsupported viewers produce an explicit failure note. Claude viewer compatibility is still awaiting live validation.
 
 Retrieved PPTX originals can be saved unchanged through a separate Save original button. For inline export, Ternote opens a filename-matched ChatGPT viewer, navigates its visible previous/next controls, and reads full-slide canvas/image pixels when permitted by the browser. This can cause ChatGPT to load its own preview resources. Ternote does not capture the desktop or browser chrome, bypass cross-origin restrictions, or substitute reflowed text. Only complete capture sequences are accepted. Static preview images do not include animations or notes. Originals and previews stay in memory, not extension storage, and are cleared with the capture/view lifecycle. Saving originals is disabled while text redaction is enabled; redaction does not modify Office files.
 
@@ -20,7 +20,7 @@ Attachment checkboxes filter the exported copy after capture; they do not preven
 
 Preferences and platform-enabled flags use chrome.storage.local. Conversation data, attachment bytes, rendered pages and PDF caches stay in memory. Closing the export view cancels work and discards that view's data. A short page-side lease cleans up interrupted sessions; it is not a background archive. Saved downloads remain until you delete them.
 
-Generated HTML contains no scripts or external resources. DOCX external file access is disabled. PDF.js, Mammoth, pdfmake, fonts and decoding resources are bundled locally. PDF generation downloads a file directly; it does not open a print dialog.
+Generated HTML contains no scripts or external resources. HTML attachment content is unchecked by default; opting in includes inert readable blocks, not executable pages. Remote embedded resources are not fetched by the HTML converter. DOCX external file access is disabled. PDF.js, Mammoth, pdfmake, fonts and decoding resources are bundled locally. PDF generation downloads a file directly; it does not open a print dialog.
 
 Permissions: storage saves preferences; scripting runs capture and the small button; activeTab identifies the page after a toolbar action. Each supported platform is an optional host permission. No all-sites access, cookies, debugger, downloads-management or browsing-history permission is requested.
 
