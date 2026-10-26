@@ -1,5 +1,5 @@
 import { PLATFORMS, platformFor, preferences } from '../platforms.js';
-import { captureConversation, cancelCapture, readCaptureBatch, readCaptureAsset, readCapturePreview, touchCapture } from '../extract.js';
+import { captureConversation, cancelCapture, readCaptureBatch, readCaptureAsset, readCapturePreview, readCaptureResult, touchCapture } from '../extract.js';
 import { exportConversation, prepareConversation, filename, messageText } from '../exporters.js';
 import { renderAsset, openPdf } from '../assets.js';
 import { createPdf } from '../pdf.js';
@@ -116,9 +116,11 @@ async function ensureConversation(signal) {
   progress({ stage: 'Loading the entire conversation', count: 0 });
   heartbeat = setInterval(() => { if (captureToken) void inject(touchCapture,[captureToken]).catch(() => {}); }, 5000);
   try {
-    const summary = await inject(captureConversation, [platform, { token: captureToken, stream: true, nativeFiles: true, nativePreviews:true }]);
+    let summary = await inject(captureConversation, [platform, { token: captureToken, stream: true, nativeFiles: true, nativePreviews:true, reportErrors:true }]);
     signal.throwIfAborted();
-    if (!summary) throw new Error('Capture returned no content. Reload the chat and retry.');
+    if (!summary) summary=await inject(readCaptureResult,[captureToken]);
+    if (summary?.captureError) throw new Error(summary.captureError);
+    if (!summary) throw new Error('The page capture was interrupted before it returned a result. Refresh ChatGPT/Claude, keep the conversation tab open, and retry. If this repeats, report whether capture started scrolling.');
     const c = { ...summary, messages: [] }; delete c.token;
     // Tests may return an in-memory fixture. Production transfers bounded batches.
     if (summary.messages) c.messages = summary.messages;

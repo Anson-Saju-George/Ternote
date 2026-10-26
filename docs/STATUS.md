@@ -1,5 +1,13 @@
 # Development status
 
+## ChatGPT capture startup fix — 2026-10-27
+
+Verification: 40 unit tests and syntax/permission checks passed. The isolated Edge suite passed with new data-turn-only and mixed nested-wrapper fixtures, startup-error envelopes, plus existing 200-message history, image/document and PDF regressions. A final URL-match guard on completed-result recovery passed unit checks after that suite. Build: 13,232,764 bytes; no permissions or dependencies added.
+
+Owner reported immediate `Capture returned no content` in Edge. A diagnostic build returning plain-data errors exposed `No supported message structure found` on the live page. Extended the independently authored ChatGPT selector set to article/section `data-turn` wrappers alongside legacy `data-message-author-role`, preserving mixed-wrapper deduplication and explicit roles. Attachment/viewer ownership checks accept the same wrappers. Conversation turn labels are omitted. No live conversation text or signed URLs were collected.
+
+Capture setup errors now cross the injected-script boundary as a serializable envelope. A missing return can recover only an already-finished, token-matched capture; partial/cancelled captures are never exported as complete. Unsupported markup reports structural counts to help diagnose changes without copying chat text. The rebuilt dist is ready for the owner's live retest; full-history success on the affected chat is not yet confirmed.
+
 ## Claude attachment candidate — 2026-10-04
 
 Verification: 38 unit tests, syntax/permission checks, build and the complete isolated Edge regression suite passed. Build size: 13,230,987 bytes. No new permissions or dependencies. Tests do not establish real Claude viewer compatibility.

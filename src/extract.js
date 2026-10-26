@@ -1,5 +1,8 @@
 // This function is injected into the enabled page. Keep it self-contained.
 export async function captureConversation(config, options = {}) {
+  // Chromium may drop rejected injected promises instead of forwarding their Error.
+  // Return a plain-data failure envelope to the extension UI, including setup failures.
+  try {
   if (location.protocol !== 'https:' || location.hostname !== config.host) throw new Error('The page changed. Open the conversation and retry.');
   globalThis.__personalExportCapture?.dispose();
   const originalUrl = location.href, controller = new AbortController();
@@ -8,7 +11,7 @@ export async function captureConversation(config, options = {}) {
   const expanded = [], clicked = new WeakSet(), historyClicks = new WeakMap();
   let head, tail, sequence = 0, version = 0, rawBytes = 0, textBytes = 0, disposed = false;
   const handle = {
-    token, controller, assets, messages: [], lastAccess: Date.now(),
+    token, controller, assets, messages: [], sourceUrl:originalUrl, lastAccess: Date.now(),
     cancel: () => controller.abort(),
     dispose: () => { disposed = true; controller.abort(); for (const a of assets.values()) if(a.marker && a.element?.getAttribute('data-ternote-file')===a.marker)a.element.removeAttribute('data-ternote-file'); assets.clear(); handle.messages = []; clearInterval(lease); globalThis.chrome?.storage?.onChanged.removeListener(onPermissions); if (globalThis.__personalExportCapture === handle) delete globalThis.__personalExportCapture; }
   };
@@ -28,7 +31,7 @@ export async function captureConversation(config, options = {}) {
     if (area === 'local' && changes.enabled?.newValue?.[config.id] === false) handle.dispose();
   }
   globalThis.chrome?.storage?.onChanged.addListener(onPermissions);
-  const skip = 'script,style,noscript,iframe,object,embed,input,textarea,select,nav,svg,[hidden],[aria-hidden="true"],[contenteditable="true"],[data-personal-exporter]';
+  const skip = 'script,style,noscript,iframe,object,embed,input,textarea,select,nav,svg,[hidden],[aria-hidden="true"],[contenteditable="true"],[data-personal-exporter],[data-testid="conversation-turn-label"]';
   function visible(el) {
     if (el.closest(skip)) return false;
     for (let n = el; n && n !== document.body; n = n.parentElement) {
@@ -348,7 +351,10 @@ export async function captureConversation(config, options = {}) {
   }
   try {
     let elements = messageElements();
-    if (!elements.length) throw new Error('No supported message structure found. The site adapter may need an update.');
+    if (!elements.length) {
+      const roles=document.querySelectorAll('[data-message-author-role]').length,turns=document.querySelectorAll('[data-turn]').length,articles=document.querySelectorAll('main article,main section[data-testid]').length;
+      throw new Error('No supported message structure found. Page markers: roles='+roles+', turns='+turns+', articles='+articles+'. Open the conversation, wait for its messages to appear, and retry. If messages are visible, send these counts so the adapter can be updated.');
+    }
     scroller = document.scrollingElement;
     for (let p = elements[0].parentElement; p && p !== document.body; p = p.parentElement) {
       if (p.scrollHeight > p.clientHeight + 2 && /(auto|scroll)/.test(getComputedStyle(p).overflowY)) { scroller = p; break; }
@@ -423,6 +429,17 @@ export async function captureConversation(config, options = {}) {
     if(!options.stream)globalThis.chrome?.storage?.onChanged.removeListener(onPermissions);
     if (!options.stream && !disposed) handle.dispose();
   }
+  } catch (error) {
+    if (!options.reportErrors) throw error;
+    return { captureError: String(error?.message || 'The page capture failed.'), token: options.token };
+  }
+}
+export function readCaptureResult(token) {
+  const job=globalThis.__personalExportCapture;
+  if (!job || job.token!==token || job.controller.signal.aborted || job.sourceUrl!==location.href) return null;
+  job.lastAccess=Date.now();
+  // Recover only a finished capture, never a partial set of messages.
+  return job.summary ? {...job.summary,token} : null;
 }
 export function touchCapture(token) {
   const job = globalThis.__personalExportCapture;

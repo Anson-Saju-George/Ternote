@@ -1,8 +1,8 @@
 // Independently authored candidate adapters. Live-site validation is pending.
 export const PLATFORMS = [
   { id: 'chatgpt', name: 'ChatGPT', host: 'chatgpt.com', origin: 'https://chatgpt.com/*',
-    selectors: ['[data-message-author-role]'],
-    user: ['[data-message-author-role="user"]'], assistant: ['[data-message-author-role="assistant"]'] },
+    selectors: ['[data-message-author-role], article[data-turn="user"], article[data-turn="assistant"], section[data-turn="user"], section[data-turn="assistant"]'],
+    user: ['[data-message-author-role="user"]','[data-turn="user"]'], assistant: ['[data-message-author-role="assistant"]','[data-turn="assistant"]'] },
   { id: 'claude', name: 'Claude', host: 'claude.ai', origin: 'https://claude.ai/*',
     selectors: ['[data-message-author-role]', '[data-testid="user-message"], [data-testid="assistant-message"]'],
     user: ['[data-message-author-role="user"]', '[data-testid="user-message"]'],

@@ -2,7 +2,7 @@
 export async function resolveNativeFile(marker, name, expectedUrl) {
   const error = message => ({error:message});
   if (!['https://chatgpt.com','https://claude.ai'].includes(location.origin) || location.href !== expectedUrl) return error('Conversation changed. Retry.');
-  const messageSelector='[data-message-author-role],[data-testid="user-message"],[data-testid="assistant-message"]';
+  const messageSelector='[data-message-author-role],article[data-turn],section[data-turn],[data-testid="user-message"],[data-testid="assistant-message"]';
   if (typeof marker !== 'string' || marker.length > 160 || typeof name !== 'string' || name.length > 200) return error('Invalid file request.');
   const card = [...document.querySelectorAll('[data-ternote-file]')].find(e => e.getAttribute('data-ternote-file') === marker);
   const normalized = value => String(value || '').replace(/\s+/g,' ').trim();

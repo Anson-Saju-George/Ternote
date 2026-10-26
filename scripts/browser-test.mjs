@@ -104,6 +104,21 @@ try{
     assert(!JSON.stringify(result).includes('SECRET'));
     assert(!result.sourceUrl.includes('?'));
     console.log('Synthetic DOM capture passed: '+p.name);
+    if(p.id==='chatgpt') {
+      await evaluate(session,`for(const e of document.querySelectorAll('[data-message-author-role]')){e.dataset.turn=e.getAttribute('data-message-author-role');e.removeAttribute('data-message-author-role');const label=document.createElement('h5');label.dataset.testid='conversation-turn-label';label.textContent='CONTROL LABEL';e.prepend(label)}`);
+      const modern=await evaluate(session,'('+captureConversation.toString()+')('+JSON.stringify(p)+',{testTiming:{pollMs:20,edgeWait:100}})');
+      assert.deepEqual(modern.messages.map(m=>m.role),['user','assistant']);
+      assert(!JSON.stringify(modern).includes('CONTROL LABEL'));
+      await evaluate(session,`const root=document.querySelector('[data-turn="assistant"]'),inner=document.createElement('div');inner.setAttribute('data-message-author-role','assistant');while(root.firstChild)inner.append(root.firstChild);root.append(inner)`);
+      const mixed=await evaluate(session,'('+captureConversation.toString()+')('+JSON.stringify(p)+',{testTiming:{pollMs:20,edgeWait:100}})');
+      assert.equal(mixed.messages.length,2,'Nested legacy role and turn wrapper must not duplicate messages');
+      assert(mixed.messages[1].blocks.some(b=>b.type==='code'));
+      console.log('ChatGPT data-turn wrappers and mixed nested message markup passed.');
+    }
+    const failed=await evaluate(session,'('+captureConversation.toString()+')('+JSON.stringify({...p,selectors:['[data-missing-message]']})+',{reportErrors:true,token:"failed-capture"})');
+    assert.match(failed.captureError,/No supported message structure/);
+    assert.equal(failed.token,'failed-capture');
+    assert.equal(await evaluate(session,'typeof globalThis.__personalExportCapture'),'undefined');
   }
   await nativeFileTests({ui,evaluate,page,send,sleep,fixtureSessions});
   await claudeAttachmentTests({ui,evaluate,page,send,sleep,fixtureSessions});

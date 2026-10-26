@@ -1,5 +1,9 @@
 # Sequential visual checkpoints
 
+## Immediate live check — ChatGPT startup, 2026-10-27
+
+Reload Ternote in Edge and refresh ChatGPT. The old generic error was traced to unsupported message structure; the candidate now reads data-turn article/section wrappers as well as legacy roles and returns meaningful errors. Confirm capture starts, reaches the first/last messages, and preserves ordering/attachments. If unsupported structure remains, collect only the displayed marker counts before changing selectors again. Never equate passing fixture coverage with confirmed live extraction.
+
 ## Next live gate — Claude attachments
 
 Reload Ternote and refresh Claude. Retest the reported long conversation: confirm actual first/last messages, order and duplicates; ordinary website/GitHub references should not produce file-fetch warnings. Test uploaded AND generated PDF, DOCX, PPTX and Markdown separately. Verify original slide previews, counts and in-flow placement; no reflow fallback. Test HTML unchecked (filename only) and checked (inert readable content). The shared adapter uses guarded visible controls, but Claude's real viewer DOM and download origins have not been observed. Request a test chat and sanitized viewer structure if matching fails; do not broaden host permissions, guess private endpoints or claim parity from synthetic fixtures. Stable-ID/history warnings must not be hidden if unresolved.
